@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle } from "lucide-react";
-import { toast } from "sonner"; // Tambahkan notifikasi toast
+import { toast } from "sonner"; // Untuk notifikasi pop up
 
 export default function LoginPage() {
   const navigate = useRouter();
@@ -30,16 +30,16 @@ export default function LoginPage() {
         description: `Selamat datang kembali, ${userData.name}`,
       });
 
-      // Redirect based on user role
+      // Masuk berdasarkan role
       if (userData.role === "admin") {
         navigate.push("/admin/dashboard");
       } else {
-        // Karena halaman user dashboard belum ada, kita arahkan ke home dulu atau admin
-        navigate.push("/"); 
+        // role user biasa
+        navigate.push("/dashboard");
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Login failed. Please try again."
+        err instanceof Error ? err.message : "Login gagal. Coba lagi."
       );
       toast.error("Login Gagal", {
         description: "Periksa kembali email dan password Anda.",
@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Illustration */}
+      {/* Sebelah Kiri - Ilustrasi */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 to-emerald-600 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full"></div>
@@ -66,12 +66,10 @@ export default function LoginPage() {
               stroke="currentColor"
               strokeWidth="1.5"
             >
-              {/* Simple city/nature illustration */}
+              {/* Logo */}
               <circle cx="100" cy="60" r="30" />
-              {/* Trees */}
               <path d="M 60 120 Q 50 100 60 80" />
               <path d="M 140 120 Q 150 100 140 80" />
-              {/* Buildings/landscape */}
               <rect x="30" y="140" width="40" height="50" />
               <rect x="130" y="150" width="40" height="40" />
               <line x1="20" y1="190" x2="180" y2="190" strokeWidth="2" />
@@ -84,7 +82,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
+      {/* Sebelah Kanan - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6 py-12">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
@@ -97,25 +95,24 @@ export default function LoginPage() {
 
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            {/* Logo/Brand */}
+            {/* Logo */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-600 rounded-xl mb-4">
                 <span className="text-white font-bold text-lg">E</span>
               </div>
             </div>
 
-            {/* Welcome Text */}
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              Welcome to EpoStory
+              Selamat Datang di EpoStory
             </h2>
-            <p className="text-center text-gray-600 mb-8">Sign in to your account</p>
+            <p className="text-center text-gray-600 mb-8">Masuk ke akun anda</p>
 
-            {/* Demo Credentials Info */}
+            {/* Info Demo */}
             <div className="space-y-3 mb-6">
-              {/* User Account */}
+              {/* Akun User */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs font-semibold text-blue-900 mb-2">
-                  👨‍🎓 Learner Account:
+                  Learner Dummy Account:
                 </p>
                 <p className="text-xs text-blue-800">
                   Email: <span className="font-mono font-bold">demo@epostory.com</span>
@@ -125,10 +122,10 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Admin Account */}
+              {/* Akun Admin */}
               <div className="bg-green-50 border border-green-600 rounded-lg p-3">
                 <p className="text-xs font-semibold text-green-600 mb-2">
-                  👨‍💼 Admin Account:
+                  Admin Dummy Account:
                 </p>
                 <p className="text-xs text-green-600">
                   Email: <span className="font-mono font-bold">admin@epostory.com</span>
@@ -139,7 +136,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Pesan Error */}
             {error && (
               <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-3">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -189,25 +186,25 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Start Adventure Button */}
+              {/* Tombol Submit */}
               <Button
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-green-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg mt-8 text-base disabled:opacity-50 disabled:cursor-not-allowed h-auto"
               >
-                {isLoading ? "Logging in..." : "Start Adventure"}
+                {isLoading ? "Logging in..." : "Mulai Perjalanan"}
               </Button>
             </form>
 
             {/* Create Account Link */}
             <div className="text-center mt-6">
               <p className="text-gray-600">
-                Don't have an account?{" "}
+                Belum punya akun?{" "}
                 <Link
                   href="/signup"
                   className="text-green-600 hover:text-emerald-700 font-semibold underline"
                 >
-                  Create an Account
+                  Buat Akun
                 </Link>
               </p>
             </div>

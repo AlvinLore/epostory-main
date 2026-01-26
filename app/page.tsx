@@ -36,18 +36,17 @@ export default function Home() {
           {/* Left Content */}
           <div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-              Learn Environmental Stories Through Interactive Chapters
+              Pelajari Isu Lingkungan Melalui Bab-Bab Interaktif
             </h1>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              EpoStory makes environmental education engaging and interactive.
-              Explore chapters about air pollution, climate change, and
-              sustainability through immersive narratives and real-world
-              applications.
+              EpoStory menjadikan pendidikan lingkungan menarik dan 
+              interaktif. Jelajahi bab-bab tentang polusi udara melalui narasi 
+              yang mendalam dan aplikasi dunia nyata.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/login">
                 <Button className="bg-green-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center space-x-2 w-full sm:w-auto justify-center h-auto text-base">
-                  <span>Start Your Adventure</span>
+                  <span>Mulai Perjalananmu</span>
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
@@ -63,7 +62,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="text-6xl mb-4">🌍</div>
                 <p className="text-gray-700 font-semibold">
-                  Explore Environmental Stories
+                  Ilustrasi Edukatif EpoStory
                 </p>
               </div>
             </div>
@@ -76,11 +75,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose EpoStory?
+              Apa Yang Didapat Dari EpoStory?
             </h2>
-            <p className="text-lg text-gray-600">
-              Engaging educational content designed for learners
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -90,11 +86,11 @@ export default function Home() {
                 <BookOpen className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Interactive Chapters
+                Pembelajaran Interaktif
               </h3>
               <p className="text-gray-600">
-                Explore detailed chapters with illustrations, narratives, and
-                real-world context about environmental topics.
+                Telusuri tiap cerita-cerita dengan ilustrasi dan narasi yang 
+                membahas isu lingkungan udara.
               </p>
             </div>
 
@@ -104,11 +100,11 @@ export default function Home() {
                 <Target className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Knowledge Assessment
+                Nilai Pengetahuanmu
               </h3>
               <p className="text-gray-600">
-                Take quizzes after each chapter to test your understanding and
-                receive personalized feedback.
+                Ikuti kuis di tiap cerita untuk menguji pemahaman Anda dan terima 
+                umpan balik yang dipersonalisasi.
               </p>
             </div>
 
@@ -118,11 +114,10 @@ export default function Home() {
                 <Users className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Track Progress
+                Lacak Progres
               </h3>
               <p className="text-gray-600">
-                Monitor your learning journey with progress bars, achievements,
-                and detailed statistics.
+                Pantau perjalanan pembelajaran Anda melalui statistik pencapaian.
               </p>
             </div>
           </div>
@@ -134,7 +129,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              How It Works
+              Cara Kerja EpoStory
             </h2>
           </div>
 
@@ -142,23 +137,23 @@ export default function Home() {
             {[
               {
                 number: 1,
-                title: "Create Account",
-                description: "Sign up and set up your profile",
+                title: "Buat Akun",
+                description: "Daftar dan atur profil Anda",
               },
               {
                 number: 2,
-                title: "Choose Chapter",
-                description: "Select from our library of topics",
+                title: "Pilih Topik",
+                description: "Pilih dari perpustakaan topik kami",
               },
               {
                 number: 3,
-                title: "Learn & Explore",
-                description: "Read immersive environmental stories",
+                title: "Belajar dan Jelajahi",
+                description: "Baca cerita lingkungan yang imersif",
               },
               {
                 number: 4,
-                title: "Take Quiz",
-                description: "Test your knowledge and track progress",
+                title: "Ikuti Kuis",
+                description: "Uji pengetahuan Anda dan lacak progresnya",
               },
             ].map((step) => (
               <div key={step.number} className="text-center">
@@ -172,24 +167,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Start Learning?
-          </h2>
-          <p className="text-lg text-emerald-100 mb-8">
-            Join thousands of students exploring environmental education through
-            interactive stories.
-          </p>
-          <Link href="/login">
-            <Button className="bg-white text-green-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold h-auto">
-              Get Started Free
-            </Button>
-          </Link>
         </div>
       </section>
 

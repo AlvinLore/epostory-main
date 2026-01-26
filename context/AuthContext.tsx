@@ -23,7 +23,7 @@ const DUMMY_USER = {
   id: "1",
   email: "demo@epostory.com",
   password: "demo123",
-  name: "Alex Johnson",
+  name: "Alex Sitompul",
 };
 
 const DUMMY_ADMIN = {

@@ -1,21 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
 import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, 
-  GripVertical, 
-  Save, 
-  ArrowLeft, 
-  Settings, 
-  Image as ImageIcon, 
-  Mic 
-} from "lucide-react";
+import { Plus, GripVertical, Save, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 interface TimelineCard {
   id: string;
@@ -25,14 +17,11 @@ interface TimelineCard {
 
 export default function StoryFlowEditor() {
   const params = useParams(); // Mengambil ID dari URL
-  
-  // State Data Timeline
   const [timeline, setTimeline] = useState<TimelineCard[]>([
     { id: "1", type: "story", title: "Page 1: Introduction" },
     { id: "2", type: "quiz", title: "Quiz 1: Understanding Basics" },
     { id: "3", type: "story", title: "Page 2: Deep Dive" },
   ]);
-
   const [selectedCard, setSelectedCard] = useState<TimelineCard | null>(
     timeline[0]
   );
@@ -65,83 +54,71 @@ export default function StoryFlowEditor() {
         <AdminSidebar />
 
         {/* Main Content */}
-        <main className="ml-64 flex-1 flex flex-col h-screen overflow-hidden">
+        <main className="flex-1 md:ml-64 pt-16 md:pt-0 flex flex-col h-screen overflow-hidden transition-all duration-300">
+          
           {/* Header */}
-          <div className="bg-white border-b border-gray-200 px-8 py-4 flex-none z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/admin/stories">
-                  <Button variant="ghost" size="icon" title="Back to Stories">
-                    <ArrowLeft className="w-5 h-5 text-gray-500" />
-                  </Button>
-                </Link>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Story Flow Editor
-                  </h1>
-                  <p className="text-gray-500 text-sm mt-0.5">
-                    Editing ID: <span className="font-mono text-green-600 font-medium">{params.id}</span>
-                  </p>
-                </div>
+          <div className="bg-white border-b border-gray-200 px-4 py-4 md:px-8 flex-shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                 <Link href="/admin/stories" className="md:hidden p-2 -ml-2 text-gray-500">
+                    <ArrowLeft className="w-5 h-5"/>
+                 </Link>
+                 <div>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        Edit Cerita <span className="text-gray-400 font-normal text-base hidden md:inline">| Chapter {params.id}</span>
+                    </h1>
+                    <p className="text-gray-500 text-xs md:text-sm">
+                        Edit dan susun alur cerita interaktif Anda di sini.
+                    </p>
+                 </div>
               </div>
-              
-              <div className="flex items-center space-x-3">
-                {/* Tombol ke halaman Metadata/Settings */}
-                <Link href={`/admin/stories/${params.id}/settings`}>
-                  <Button variant="ghost" size="icon" title="Story Settings">
-                    <Settings className="w-5 h-5 text-gray-500" />
-                  </Button>
-                </Link>
-                
-                <Button variant="outline" className="border-gray-300 hover:bg-gray-100 gap-2">
-                  <Save className="w-4 h-4" /> Save Draft
+              <div className="flex items-center gap-2 md:gap-3">
+                <Button variant="outline" className="text-xs md:text-sm border-gray-300">
+                  Simpan Draft
                 </Button>
-                <Button className="bg-green-600 hover:bg-emerald-700 text-white">
-                  Publish Story
+                <Button className="bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm gap-2">
+                  <Save className="w-4 h-4" /> Publikasikan Perubahan
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Editor Layout Area */}
-          <div className="flex-1 flex overflow-hidden">
+          {/* Editor Area (Split View) */}
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             
-            {/* Left Sidebar - Timeline */}
-            <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-none">
+            {/* Sidebar kiri - Timeline */}
+            <div className="w-full md:w-80 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col flex-shrink-0 h-1/3 md:h-full">
+              
               {/* Timeline Header */}
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Chapter Timeline
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                  Timeline
                 </h2>
               </div>
 
               {/* Timeline Cards List */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {timeline.map((card) => (
                   <button
                     key={card.id}
                     onClick={() => setSelectedCard(card)}
-                    className={`w-full p-4 rounded-lg border-2 transition-all text-left group relative ${
+                    className={`w-full p-3 rounded-lg border transition-all text-left group relative ${
                       selectedCard?.id === card.id
                         ? card.type === "story"
-                          ? "border-blue-500 bg-blue-50 shadow-sm"
-                          : "border-orange-500 bg-orange-50 shadow-sm"
-                        : "border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm"
+                          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
+                          : "border-orange-500 bg-orange-50 ring-1 ring-orange-500"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
-                      <GripVertical className="w-5 h-5 text-gray-300 mt-1 cursor-grab active:cursor-grabbing" />
-                      <div className="flex-1 min-w-0">
-                        <div
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide mb-1.5 ${
-                            card.type === "story"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-orange-100 text-orange-700"
-                          }`}
-                        >
-                          {card.type === "story" ? "Story Page" : "Quiz Session"}
+                    <div className="flex items-center gap-3">
+                      <GripVertical className="w-4 h-4 text-gray-300 group-hover:text-gray-500 cursor-move" />
+                      <div className="min-w-0">
+                        <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase mb-1 ${
+                            card.type === "story" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
+                        }`}>
+                            {card.type}
                         </div>
-                        <p className="font-semibold text-gray-900 text-sm truncate">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
                           {card.title}
                         </p>
                       </div>
@@ -150,180 +127,149 @@ export default function StoryFlowEditor() {
                 ))}
               </div>
 
-              {/* Add Buttons */}
-              <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-2">
+              {/* Tombol penambah cerita dan kuis */}
+              <div className="p-3 border-t border-gray-200 grid grid-cols-2 gap-2 bg-gray-50">
                 <button
                   onClick={handleAddStoryPage}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium transition-colors text-sm shadow-sm"
+                  className="flex flex-col items-center justify-center p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-xs font-medium"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Story Page</span>
+                  <Plus className="w-4 h-4 mb-1" />
+                  + Story
                 </button>
                 <button
                   onClick={handleAddQuizSession}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 hover:border-orange-300 font-medium transition-colors text-sm shadow-sm"
+                  className="flex flex-col items-center justify-center p-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors text-xs font-medium"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Quiz Session</span>
+                  <Plus className="w-4 h-4 mb-1" />
+                  + Quiz
                 </button>
               </div>
             </div>
 
-            {/* Right Main Area - Editor Canvas */}
-            <div className="flex-1 overflow-y-auto bg-gray-50/50 p-8">
+            {/* Main Area Kanan - Form Editor */}
+            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-8 h-2/3 md:h-full">
               {selectedCard ? (
-                <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8 min-h-[600px]">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-8 border-b border-gray-100 pb-4">
-                    {isStoryPage ? "📝 Edit Story Content" : "❓ Edit Quiz Question"}
-                  </h3>
+                <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                     <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                        Edit {isStoryPage ? "Konten Cerita" : "Pertanyaan Kuis"}
+                     </h3>
+                     <span className="text-xs text-gray-400 font-mono">ID: {selectedCard.id}</span>
+                  </div>
 
                   {isStoryPage ? (
-                    // --- FORM EDITOR CERITA ---
-                    <div className="space-y-8">
+                    // --- STORY PAGE FORM ---
+                    <div className="space-y-6">
                       {/* Title */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Page Title
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Judul Halaman
                         </label>
                         <Input
                           type="text"
                           defaultValue={selectedCard.title}
-                          placeholder="Enter page title"
-                          className="text-lg font-medium"
+                          className="bg-gray-50 border-gray-300 focus:bg-white transition-colors"
                         />
                       </div>
 
-                      {/* Upload Image */}
+                      {/* Image Upload */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Illustration Image
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Gambar Ilustrasi
                         </label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer group">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-100 transition-colors">
-                            <ImageIcon className="w-8 h-8 text-gray-400 group-hover:text-green-600" />
-                          </div>
-                          <p className="text-gray-900 font-medium">
-                            Drag and drop your illustration
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-green-500 hover:bg-green-50/30 transition-all cursor-pointer group">
+                          <div className="text-4xl mb-3 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all">🖼️</div>
+                          <p className="text-sm font-medium text-gray-900">
+                            Click to upload or drag and drop
                           </p>
-                          <p className="text-gray-500 text-sm mt-1">
-                            or click to browse file
+                          <p className="text-xs text-gray-500 mt-1">
+                            SVG, PNG, JPG or GIF (max. 3MB)
                           </p>
                         </div>
                       </div>
 
                       {/* Story Text */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Narrative Text
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Teks Narasi
                         </label>
                         <textarea
-                          placeholder="Write your story narrative (2-3 paragraphs)..."
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none min-h-[200px] text-base leading-relaxed resize-y"
+                          placeholder="Tulis narasi disini..."
+                          className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[150px] text-sm bg-gray-50 focus:bg-white transition-colors resize-y"
                         ></textarea>
-                      </div>
-
-                      {/* Audio Upload */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Audio Narration (Optional)
-                        </label>
-                        <div className="flex items-center justify-center border border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-white hover:border-gray-400 transition-colors cursor-pointer border-dashed gap-3">
-                          <div className="w-10 h-10 bg-white rounded-full border flex items-center justify-center">
-                            <Mic className="w-5 h-5 text-gray-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Upload Voiceover</p>
-                            <p className="text-xs text-gray-500">MP3 or WAV (Max 10MB)</p>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   ) : (
-                    // --- FORM EDITOR KUIS ---
-                    <div className="space-y-8">
+                    // --- QUIZ FORM ---
+                    <div className="space-y-6">
                       {/* Quiz Title */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Quiz Title
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Judul Sesi
                         </label>
                         <Input
                           type="text"
                           defaultValue={selectedCard.title}
-                          placeholder="Enter quiz title"
-                          className="text-lg font-medium"
+                          className="bg-gray-50 border-gray-300"
                         />
                       </div>
 
                       {/* Question */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Question
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Pertanyaan
                         </label>
                         <textarea
-                          placeholder="Enter your question here..."
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none min-h-[100px] text-lg resize-y"
+                          placeholder="Tulis pertanyaanmu disini..."
+                          className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 min-h-[100px] text-sm bg-gray-50 resize-y"
                         ></textarea>
                       </div>
 
-                      {/* Options */}
-                      <div className="space-y-4">
-                         <label className="block text-sm font-medium text-gray-700">
-                          Answer Options (Select correct answer)
-                        </label>
-                        {["A", "B", "C", "D"].map((option) => (
-                          <div key={option} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group focus-within:ring-1 focus-within:ring-green-500">
-                            <div className="flex items-center h-5">
-                              <input
-                                type="radio"
-                                name="correct_answer"
-                                id={`option_${option}`}
-                                className="w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500 cursor-pointer"
-                              />
+                      {/* Options Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {["A", "B", "C", "D"].map((opt) => (
+                            <div key={opt} className="relative">
+                                <label className="text-xs font-bold text-gray-500 mb-1 block">Opsi {opt}</label>
+                                <div className="flex items-center">
+                                    <input type="radio" name="correct_opt" className="w-4 h-4 text-orange-600 mr-2 focus:ring-orange-500" />
+                                    <Input placeholder={`Jawaban ${opt}`} className="flex-1 text-sm" />
+                                </div>
                             </div>
-                            <span className="font-bold text-gray-400 w-6 group-hover:text-gray-600">{option}.</span>
-                            <Input
-                              placeholder={`Enter answer for option ${option}`}
-                              className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 p-0 text-gray-900 placeholder:text-gray-400"
-                            />
-                          </div>
                         ))}
                       </div>
-
+                      
                       {/* Feedback */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Feedback/Explanation
+                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <label className="block text-sm font-semibold text-blue-800 mb-2">
+                          Penjelasan (Feedback)
                         </label>
                         <textarea
-                          placeholder="Provide explanation why the answer is correct..."
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none min-h-[100px] text-sm bg-blue-50/50"
+                          placeholder="Jelaskan mengapa jawaban ini benar..."
+                          className="w-full p-3 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 min-h-[80px]"
                         ></textarea>
                       </div>
                     </div>
                   )}
 
-                  {/* Bottom Action Buttons */}
-                  <div className="mt-12 pt-6 border-t border-gray-100 flex justify-end gap-4">
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 hover:bg-gray-50"
-                    >
-                      Discard Changes
+                  {/* Footer Actions */}
+                  <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <Button variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                        Hapus Kartu
                     </Button>
-                    <Button className="bg-green-600 hover:bg-emerald-700 text-white px-8">
-                      Save Changes
+                    <Button className="bg-green-600 text-white hover:bg-green-700 shadow-sm">
+                        Simpan Perubahan
                     </Button>
                   </div>
+
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4 text-3xl">
-                    👈
-                  </div>
-                  <p className="text-lg font-medium">Select a chapter from the timeline to start editing</p>
+                  <div className="text-6xl mb-4">👈</div>
+                  <p className="text-lg font-medium">Select an item from the timeline to edit</p>
                 </div>
               )}
             </div>
+
           </div>
         </main>
       </div>
