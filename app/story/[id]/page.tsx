@@ -11,6 +11,7 @@ interface StoryPage {
   type: "story" | "quiz";
   title: string;
   content: string; 
+  image?: string | null; // Tambahan field image
   quizOptions?: string[];
   quizAns?: number;
   quizFeedback?: {
@@ -43,7 +44,8 @@ const STORY_DATA = {
         { 
           type: "story", 
           title: "Pagi yang Berkabut", 
-          content: "Pagi itu, Maya membuka jendela kamarnya. Bukan sinar matahari cerah yang menyapanya, melainkan kabut tipis berwarna kelabu yang membuat gedung-gedung tinggi di kejauhan tampak samar. 'Uhuk.. uhuk..,' Maya terbatuk kecil saat menghirup udara pagi itu." 
+          content: "Pagi itu, Maya membuka jendela kamarnya. Bukan sinar matahari cerah yang menyapanya, melainkan kabut tipis berwarna kelabu yang membuat gedung-gedung tinggi di kejauhan tampak samar. 'Uhuk.. uhuk..,' Maya terbatuk kecil saat menghirup udara pagi itu.",
+          image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=800"
         },
         { 
           type: "quiz", 
@@ -59,7 +61,8 @@ const STORY_DATA = {
         { 
           type: "story", 
           title: "Berangkat Sekolah", 
-          content: "Ibu menghampiri Maya dan memberinya masker. 'Pakai ini ya, Nak. Kualitas udara hari ini sedang tidak sehat,' kata Ibu sambil menunjukkan aplikasi ISPU di ponselnya yang berwarna merah. Maya mengangguk dan berjanji akan mencari tahu cara membuat udara kembali bersih." 
+          content: "Ibu menghampiri Maya dan memberinya masker. 'Pakai ini ya, Nak. Kualitas udara hari ini sedang tidak sehat,' kata Ibu sambil menunjukkan aplikasi ISPU di ponselnya yang berwarna merah. Maya mengangguk dan berjanji akan mencari tahu cara membuat udara kembali bersih.",
+          image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=800"
         }
       ]
     } as Chapter,
@@ -70,7 +73,8 @@ const STORY_DATA = {
         { 
           type: "story", 
           title: "Ide Cemerlang", 
-          content: "Di sekolah, Maya mengajak teman-temannya untuk memulai gerakan 'Satu Anak Satu Pohon'. Mereka percaya bahwa pohon adalah filter udara alami terbaik yang bisa mereka tanam sendiri." 
+          content: "Di sekolah, Maya mengajak teman-temannya untuk memulai gerakan 'Satu Anak Satu Pohon'. Mereka percaya bahwa pohon adalah filter udara alami terbaik yang bisa mereka tanam sendiri.",
+          image: "https://images.unsplash.com/photo-1584631483163-548c89fb4bc2?auto=format&fit=crop&q=80&w=800"
         },
         {
            type: "quiz",
@@ -86,7 +90,8 @@ const STORY_DATA = {
         {
           type: "story",
           title: "Akhir Petualangan",
-          content: "Berkat usaha Maya dan teman-temannya, sekolah mereka menjadi lebih hijau. Udara di sekitar sekolah terasa lebih sejuk. Maya tersenyum, langkah kecil ini adalah awal dari perubahan besar untuk Jakarta."
+          content: "Berkat usaha Maya dan teman-temannya, sekolah mereka menjadi lebih hijau. Udara di sekitar sekolah terasa lebih sejuk. Maya tersenyum, langkah kecil ini adalah awal dari perubahan besar untuk Jakarta.",
+          image: "https://images.unsplash.com/photo-1584631483163-548c89fb4bc2?auto=format&fit=crop&q=80&w=800"
         }
       ]
     } as Chapter
@@ -352,11 +357,21 @@ export default function SmartStoryPlayer() {
                 {/* Background Decoration */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                 
-                <div className="text-center z-10 animate-in zoom-in duration-500">
-                    <div className="mb-6 filter drop-shadow-xl flex justify-center">
+                <div className="text-center z-10 animate-in zoom-in duration-500 w-full flex flex-col items-center">
+                    <div className="mb-6 filter drop-shadow-xl flex justify-center w-full">
                         {isQuizPage ? (
                             <div className="bg-white p-6 rounded-full shadow-lg">
                                 <AlertCircle className="w-16 h-16 md:w-24 md:h-24 text-indigo-500 animate-pulse" />
+                            </div>
+                        ) : currentPage.image ? (
+                            // KONTROL UKURAN GAMBAR 16:9
+                            // Mobile: max 320px x 180px | Desktop: max 512px x 288px
+                            <div className="relative w-[90%] md:w-[85%] max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
+                                <img 
+                                    src={currentPage.image} 
+                                    alt={currentPage.title} 
+                                    className="w-full h-full object-cover" 
+                                />
                             </div>
                         ) : (
                             <BookOpen className="w-20 h-20 md:w-32 md:h-32 text-green-600 opacity-80" />
