@@ -45,7 +45,7 @@ const STORY_DATA = {
           type: "story", 
           title: "Pagi yang Berkabut", 
           content: "Pagi itu, Maya membuka jendela kamarnya. Bukan sinar matahari cerah yang menyapanya, melainkan kabut tipis berwarna kelabu yang membuat gedung-gedung tinggi di kejauhan tampak samar. 'Uhuk.. uhuk..,' Maya terbatuk kecil saat menghirup udara pagi itu.",
-          image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=800"
+          image: "/Uji coba gambar 1.png"
         },
         { 
           type: "quiz", 
@@ -364,9 +364,9 @@ export default function SmartStoryPlayer() {
                                 <AlertCircle className="w-16 h-16 md:w-24 md:h-24 text-indigo-500 animate-pulse" />
                             </div>
                         ) : currentPage.image ? (
-                            // KONTROL UKURAN GAMBAR 16:9
-                            // Mobile: max 320px x 180px | Desktop: max 512px x 288px
-                            <div className="relative w-[90%] md:w-[85%] max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
+                            // KONTROL UKURAN GAMBAR 1:1
+                            // Maksimalnya sekitar 448x448 pixel
+                            <div className="relative h-[35vh] w-auto md:h-auto md:w-[70%] max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
                                 <img 
                                     src={currentPage.image} 
                                     alt={currentPage.title} 
@@ -386,7 +386,7 @@ export default function SmartStoryPlayer() {
             </div>
 
             {/* AREA KANAN: KONTEN (Responsif: Bawah di Mobile) */}
-            <div className="h-[60vh] md:h-auto md:w-[500px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300">
+            <div className="h-[50vh] md:h-auto md:w-[500px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300">
             
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
                     
