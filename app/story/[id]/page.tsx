@@ -366,7 +366,7 @@ export default function SmartStoryPlayer() {
                         ) : currentPage.image ? (
                             // KONTROL UKURAN GAMBAR 1:1
                             // Maksimalnya sekitar 448x448 pixel
-                            <div className="relative h-[35vh] w-auto md:h-auto md:w-[70%] max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
+                            <div className="relative h-[40vh] w-auto md:h-auto md:w-[70%] max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
                                 <img 
                                     src={currentPage.image} 
                                     alt={currentPage.title} 
