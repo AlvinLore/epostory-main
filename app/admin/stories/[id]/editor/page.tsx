@@ -28,12 +28,8 @@ interface StoryPage {
   image?: string | null; 
   
   // Field Kuis
-  quizOptions?: string[]; 
-  quizAns?: number; 
-  quizFeedback?: {
-    correct: string;
-    incorrect: string;
-  };
+  quizOptions?: { text: string; feedback: string }[];
+  quizAns?: number;
 }
 
 interface Chapter {
@@ -105,7 +101,13 @@ export default function StoryEditor() {
     const newQ: QuizItem = {
       id: Date.now().toString(),
       question: "",
-      options: [{ id: "0", text: "", isCorrect: true }, { id: "1", text: "", isCorrect: false }, { id: "2", text: "", isCorrect: false }, { id: "3", text: "", isCorrect: false }]
+      options: [
+        { id: "0", text: "", isCorrect: true }, 
+        { id: "1", text: "", isCorrect: false }, 
+        { id: "2", text: "", isCorrect: false }, 
+        { id: "3", text: "", isCorrect: false },
+        { id: "4", text: "", isCorrect: false }
+      ]
     };
     if (target === "pre") setStory({ ...story, preTest: [...story.preTest, newQ] });
     else setStory({ ...story, postTest: [...story.postTest, newQ] });
@@ -160,9 +162,14 @@ export default function StoryEditor() {
       title: type === "story" ? "Halaman Baru" : "Kuis Baru",
       content: "",
       image: null, // Init image
-      quizOptions: type === 'quiz' ? ["", "", "", ""] : undefined,
-      quizAns: type === 'quiz' ? 0 : undefined,
-      quizFeedback: type === 'quiz' ? { correct: "Jawaban Benar!", incorrect: "Kurang Tepat." } : undefined
+      quizOptions: type === 'quiz' ? [
+        { text: "", feedback: "" },
+        { text: "", feedback: "" },
+        { text: "", feedback: "" },
+        { text: "", feedback: "" },
+        { text: "", feedback: "" }
+      ] : undefined,
+      quizAns: type === 'quiz' ? 0 : undefined
     };
 
     setStory(prev => ({
@@ -211,16 +218,12 @@ export default function StoryEditor() {
   };
 
   // Handler Opsi Kuis
-  const updateQuizOption = (optIdx: number, val: string) => {
+  const updateQuizOption = (optIdx: number, field: 'text' | 'feedback', val: string) => {
     if (!currentPage || !currentPage.quizOptions) return;
     const newOpts = [...currentPage.quizOptions];
-    newOpts[optIdx] = val;
+    // Memperbarui properti spesifik (text atau feedback) pada indeks yang dipilih
+    newOpts[optIdx] = { ...newOpts[optIdx], [field]: val };
     updatePage('quizOptions', newOpts);
-  };
-
-  const updateQuizFeedback = (type: 'correct' | 'incorrect', val: string) => {
-    if (!currentPage || !currentPage.quizFeedback) return;
-    updatePage('quizFeedback', { ...currentPage.quizFeedback, [type]: val });
   };
 
   const handleDeletePage = (pId: string) => {
@@ -462,33 +465,45 @@ export default function StoryEditor() {
 
                            {/* FORM QUIZ/KUIS */}
                            {currentPage.type === 'quiz' && (
-                               <div className="bg-yellow-50/50 border border-yellow-100 rounded-xl p-4 md:p-6 space-y-6">
-                                   <div>
-                                       <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Opsi Jawaban</label>
-                                       <div className="space-y-3">
-                                           {currentPage.quizOptions?.map((opt, i) => (
-                                               <div key={i} className="flex items-center gap-3">
-                                                   <input type="radio" name="quiz-ans" checked={currentPage.quizAns === i} onChange={() => updatePage('quizAns', i)} className="w-4 h-4 accent-green-600 cursor-pointer shrink-0" title="Tandai sebagai jawaban benar" />
-                                                   <div className="flex-1">
-                                                       <Input value={opt} onChange={(e: ChangeEvent<HTMLInputElement>) => updateQuizOption(i, e.target.value)} placeholder={`Opsi ${String.fromCharCode(65 + i)}`} className={`bg-white ${currentPage.quizAns === i ? 'border-green-500 ring-1 ring-green-500' : ''}`} />
-                                                   </div>
-                                               </div>
-                                           ))}
-                                       </div>
-                                       <p className="text-xs text-gray-500 mt-2 ml-7">* Pilih radio button untuk menentukan kunci jawaban.</p>
-                                   </div>
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                       <div>
-                                           <label className="block text-xs font-bold text-green-700 mb-1">Feedback Benar</label>
-                                           <textarea value={currentPage.quizFeedback?.correct} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => updateQuizFeedback('correct', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm placeholder:text-green-700/50 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Pujian jika jawaban benar..." />
-                                       </div>
-                                       <div>
-                                           <label className="block text-xs font-bold text-red-700 mb-1">Feedback Salah</label>
-                                           <textarea value={currentPage.quizFeedback?.incorrect} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => updateQuizFeedback('incorrect', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm placeholder:text-red-700/50 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Penjelasan jika jawaban salah..." />
-                                       </div>
-                                   </div>
-                               </div>
-                           )}
+                            <div className="bg-yellow-50/50 border border-yellow-100 rounded-xl p-4 md:p-6 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                                        Opsi Jawaban & Feedback Spesifik
+                                    </label>
+                                    <div className="space-y-4">
+                                        {currentPage.quizOptions?.map((opt, i) => (
+                                            <div key={i} className={`flex items-start gap-3 p-4 border rounded-xl bg-white transition-all ${currentPage.quizAns === i ? 'border-green-400 ring-1 ring-green-400' : 'border-gray-200'}`}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="quiz-ans" 
+                                                    checked={currentPage.quizAns === i} 
+                                                    onChange={() => updatePage('quizAns', i)} 
+                                                    className="mt-3 w-4 h-4 accent-green-600 cursor-pointer shrink-0" 
+                                                    title="Tandai sebagai jawaban benar" 
+                                                />
+                                                <div className="flex-1 space-y-3">
+                                                    {/* Input untuk Teks Jawaban */}
+                                                    <Input
+                                                      value={opt.text} 
+                                                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateQuizOption(i, 'text', e.target.value)} 
+                                                      placeholder={`Opsi ${String.fromCharCode(65 + i)}`} 
+                                                      className={`bg-white ${currentPage.quizAns === i ? 'font-semibold border-green-200 bg-green-50/30' : ''}`} 
+                                                    />
+                                                    {/* Input untuk Feedback Spesifik Opsi Ini */}
+                                                    <Input
+                                                      value={opt.feedback} 
+                                                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateQuizOption(i, 'feedback', e.target.value)} 
+                                                      placeholder="Penjelasan (feedback) jika opsi ini dipilih..." 
+                                                      className="bg-gray-50 text-sm h-9"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2 ml-7">* Pilih radio button untuk menentukan kunci jawaban.</p>
+                                </div>
+                            </div>
+                        )}
                        </div>
                    </div>
                ) : (

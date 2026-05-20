@@ -12,12 +12,8 @@ interface StoryPage {
   title: string;
   content: string; 
   image?: string | null; // Tambahan field image
-  quizOptions?: string[];
+  quizOptions?: { text: string; feedback: string }[];
   quizAns?: number;
-  quizFeedback?: {
-    correct: string;
-    incorrect: string;
-  };
 }
 
 interface Chapter {
@@ -32,8 +28,18 @@ const STORY_DATA = {
   title: "Petualangan Udara Bersih",
   // PRE-TEST
   preTest: [
-    { id: "pre1", q: "Apa singkatan dari ISPU?", options: ["Indeks Standar Pencemar Udara", "Ikatan Sarjana Pencinta Udara", "Instalasi Saluran Pipa Udara"], ans: 0 },
-    { id: "pre2", q: "Manakah yang BUKAN sumber polusi udara?", options: ["Asap Kendaraan", "Pembakaran Sampah", "Menanam Pohon"], ans: 2 }
+    { 
+      id: "pre1", 
+      q: "Apa singkatan dari ISPU?",
+      options: ["Indeks Standar Pencemar Udara", "Ikatan Sarjana Pencinta Udara", "Instalasi Saluran Pipa Udara", "Indikator Standar Polusi Udara", "Indeks Status Pencemaran Udara"], 
+      ans: 0 
+    },
+    { 
+      id: "pre2", 
+      q: "Manakah yang BUKAN sumber polusi udara?",
+      options: ["Asap Kendaraan", "Pembakaran Sampah", "Menanam Pohon", "Asap Pabrik Industri", "Debu Konstruksi Bangunan"], 
+      ans: 2 
+    }
   ],
   // CHAPTERS
   chapters: [
@@ -51,12 +57,14 @@ const STORY_DATA = {
           type: "quiz", 
           title: "Kuis Kilat: Identifikasi Masalah", 
           content: "Menurutmu, kenapa langit Jakarta terlihat berwarna kelabu padahal tidak mendung?", 
-          quizOptions: ["Karena kabut air alami dari laut", "Karena tumpukan polusi asap kendaraan (Smog)", "Karena efek lensa kamera"],
-          quizAns: 1, 
-          quizFeedback: {
-            correct: "Tepat sekali! Itu disebut Smog (Smoke + Fog), campuran asap polusi dan kabut yang berbahaya bagi pernapasan.",
-            incorrect: "Kurang tepat. Kabut alami biasanya putih bersih dan sejuk. Kabut kelabu ini mengandung partikel jahat dari asap kendaraan."
-          }
+          quizOptions: [
+            { text: "Karena kabut air alami dari laut", feedback: "Kurang tepat. Kabut alami biasanya berwarna putih bersih dan memberikan efek sejuk, bukan kelabu." },
+            { text: "Karena tumpukan polusi asap kendaraan (Smog)", feedback: "Tepat sekali! Itu disebut Smog (Smoke + Fog), campuran asap beracun dan kabut yang berbahaya bagi paru-paru." },
+            { text: "Karena efek lensa kamera", feedback: "Salah. Ini bukan efek visual kamera, melainkan kondisi nyata tebalnya polutan di udara." },
+            { text: "Karena pantulan cahaya gedung", feedback: "Tidak tepat. Cahaya dari pantulan gedung kaca tidak akan membuat langit menjadi tertutup kabut kelabu." },
+            { text: "Karena asap dari dapur rumah warga", feedback: "Kurang tepat. Skalanya terlalu kecil. Kabut tebal ini utamanya berasal dari gas buang kendaraan massal dan industri." }
+          ],
+          quizAns: 1,
         },
         { 
           type: "story", 
@@ -80,12 +88,14 @@ const STORY_DATA = {
            type: "quiz",
            title: "Kuis Kilat: Solusi",
            content: "Apa fungsi utama pohon dalam mengurangi polusi udara?",
-           quizOptions: ["Menyerap Karbondioksida & menghasilkan Oksigen", "Membuat jalanan menjadi macet", "Menarik petir saat hujan"],
+           quizOptions: [
+            { text: "Menyerap Karbondioksida & menghasilkan Oksigen", feedback: "Benar! Pohon bertindak sebagai filter alami kota yang menyerap gas jahat dan memberikan kita udara segar." },
+            { text: "Membuat jalanan menjadi macet", feedback: "Tentu saja salah. Pohon ditanam di trotoar atau taman, bukan di tengah jalan." },
+            { text: "Menarik petir saat hujan", feedback: "Kurang tepat. Meski pohon tinggi bisa tersambar petir, fungsi utamanya dalam konteks polusi adalah memfilter udara." },
+            { text: "Menghasilkan gas beracun", feedback: "Terbalik! Pohon justru menyerap gas beracun dan memproduksi oksigen bersih." },
+            { text: "Memantulkan radiasi matahari", feedback: "Kurang tepat. Pohon menyerap cahaya matahari untuk melakukan fotosintesis, bukan memantulkannya." }
+           ],
            quizAns: 0,
-           quizFeedback: {
-             correct: "Benar! Pohon bertindak sebagai paru-paru kota yang menyerap gas jahat dan memberikan kita udara segar.",
-             incorrect: "Salah. Pohon justru membantu membersihkan udara, bukan menyebabkan macet atau menarik petir sembarangan."
-           }
         },
         {
           type: "story",
@@ -98,8 +108,18 @@ const STORY_DATA = {
   ],
   // POST-TEST
   postTest: [
-    { id: "post1", q: "Tindakan apa yang paling tepat dilakukan saat kualitas udara buruk?", options: ["Berolahraga lari di jalan raya", "Menggunakan masker saat keluar rumah", "Membakar sampah daun kering"], ans: 1 },
-    { id: "post2", q: "Apa nama partikel debu halus yang berbahaya bagi paru-paru?", options: ["PM2.5", "H2O", "CO2"], ans: 0 }
+    { 
+      id: "post1", 
+      q: "Tindakan apa yang paling tepat dilakukan saat kualitas udara buruk?",
+      options: ["Berolahraga lari di jalan raya", "Menggunakan masker saat keluar rumah", "Membakar sampah daun kering", "Membuka seluruh jendela rumah lebar-lebar", "Tidak melakukan apa-apa"], 
+      ans: 1 
+    },
+    { 
+      id: "post2", 
+      q: "Apa nama partikel debu halus yang berbahaya bagi paru-paru?",
+      options: ["PM2.5", "H2O", "CO2", "Oksigen", "Karbondioksida"], 
+      ans: 0 
+    }
   ]
 };
 
@@ -386,7 +406,8 @@ export default function SmartStoryPlayer() {
             </div>
 
             {/* AREA KANAN: KONTEN (Responsif: Bawah di Mobile) */}
-            <div className="h-[50vh] md:h-auto md:w-[500px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300">
+            {/* Menggunakan kondisi: jika kuis h-[75vh], jika cerita biasa h-[50vh] */}
+            <div className={`${isQuizPage ? 'h-[75vh]' : 'h-[50vh]'} md:h-auto md:w-[500px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300`}>
             
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
                     
@@ -413,7 +434,6 @@ export default function SmartStoryPlayer() {
                                 <p className="text-gray-800 font-medium text-lg mb-4">{currentPage.content}</p>
                                 
                                 {currentPage.quizOptions.map((opt, idx) => {
-                                    // Logic Style Button Kuis
                                     let btnClass = "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50";
                                     if (inlineQuizSelection === idx) {
                                         if (inlineQuizFeedback === 'correct') btnClass = "border-green-500 bg-green-50 text-green-700 font-bold";
@@ -428,15 +448,15 @@ export default function SmartStoryPlayer() {
                                             disabled={inlineQuizFeedback !== null}
                                             className={`w-full p-4 rounded-xl border-2 text-left text-sm md:text-base transition-all duration-200 flex justify-between items-center ${btnClass}`}
                                         >
-                                            {opt}
+                                            {opt.text}
                                             {inlineQuizSelection === idx && inlineQuizFeedback === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 ml-2"/>}
                                             {inlineQuizSelection === idx && inlineQuizFeedback === 'incorrect' && <XCircle className="w-5 h-5 text-red-600 shrink-0 ml-2"/>}
                                         </button>
                                     )
                                 })}
 
-                                {/* Kotak Feedback */}
-                                {inlineQuizFeedback && (
+                                {/* Kotak Feedback*/}
+                                {inlineQuizFeedback && inlineQuizSelection !== null && (
                                     <div className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
                                         inlineQuizFeedback === 'correct'
                                         ? 'bg-green-50 border-green-200 text-green-900' 
@@ -454,7 +474,8 @@ export default function SmartStoryPlayer() {
                                                     {inlineQuizFeedback === 'correct' ? "Jawaban Benar!" : "Kurang Tepat"}
                                                 </p>
                                                 <p className="leading-relaxed opacity-90">
-                                                    {inlineQuizFeedback === 'correct' ? currentPage.quizFeedback?.correct : currentPage.quizFeedback?.incorrect}
+                                                    {/* MEMANGGIL FEEDBACK SPESIFIK DARI OPSI YANG DIPILIH (INDEX) */}
+                                                    {currentPage.quizOptions[inlineQuizSelection].feedback}
                                                 </p>
                                             </div>
                                         </div>
