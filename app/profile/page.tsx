@@ -17,7 +17,8 @@ export default function ProfileSettings() {
   const [formData, setFormData] = useState({
     fullName: "Learner",
     email: "learner@example.com",
-    school: "STIS"
+    school: "STIS",
+    gender: ""
   });
 
   // Update state saat data user dari context siap
@@ -26,7 +27,8 @@ export default function ProfileSettings() {
       setFormData(prev => ({
         ...prev,
         fullName: user.name || "Learner",
-        email: user.email || "learner@example.com"
+        email: user.email || "learner@example.com",
+        gender: user.gender || ""
       }));
     }
   }, [user]);
@@ -156,6 +158,22 @@ export default function ProfileSettings() {
                       onChange={(e) => setFormData({...formData, school: e.target.value})}
                       className="rounded-lg border-gray-300 focus:ring-green-500"
                     />
+                  </div>
+
+                  {/* Jenis Kelamin */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Jenis Kelamin
+                    </label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="" disabled>Pilih Jenis Kelamin</option>
+                      <option value="Laki-laki">Laki-laki</option>
+                      <option value="Perempuan">Perempuan</option>
+                    </select>
                   </div>
 
                   {/* Save Button */}

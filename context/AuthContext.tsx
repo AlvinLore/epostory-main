@@ -7,6 +7,7 @@ interface User {
   email: string;
   name: string;
   role: "user" | "admin";
+  gender?: "Laki-laki" | "Perempuan" | "";
 }
 
 interface AuthContextType {
@@ -24,6 +25,8 @@ const DUMMY_USER = {
   email: "demo@epostory.com",
   password: "demo123",
   name: "Alex Sitompul",
+  role: "user",
+  gender: "Laki-laki"
 };
 
 const DUMMY_ADMIN = {
@@ -31,6 +34,8 @@ const DUMMY_ADMIN = {
   email: "admin@epostory.com",
   password: "admin123",
   name: "Admin User",
+  role: "admin",
+  gender: "Laki-laki"
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
