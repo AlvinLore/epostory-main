@@ -24,7 +24,7 @@ const DUMMY_USER = {
   id: "1",
   email: "demo@epostory.com",
   password: "demo123",
-  name: "Alex Sitompul",
+  name: "Alex Sitompul Panjaitan",
   role: "user",
   gender: "Laki-laki"
 };
