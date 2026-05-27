@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { 
   Plus, Save, Trash2, FileText, CheckSquare, Layers, 
   ChevronRight, X, Globe, Lock, Layout, List, Edit3, 
-  Image as ImageIcon, UploadCloud 
+  Image as ImageIcon, UploadCloud, Award, ExternalLink
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
 // TIPE DATA
-interface QuizItem {
+interface TestItem {
   id: string;
   question: string;
   options: { id: string; text: string; isCorrect: boolean }[];
@@ -26,8 +26,6 @@ interface StoryPage {
   title: string;
   content: string;
   image?: string | null; 
-  
-  // Field Kuis
   quizOptions?: { text: string; feedback: string }[];
   quizAns?: number;
 }
@@ -41,10 +39,12 @@ interface Chapter {
 interface StoryData {
   id: string;
   title: string;
-  status: "draft" | "published"; 
-  preTest: QuizItem[];
+  status: "draft" | "published";
+  coverImage?: string | null;
+  certificateImage?: string | null;
+  preTest: TestItem[];
   chapters: Chapter[];
-  postTest: QuizItem[];
+  postTest: TestItem[];
 }
 
 export default function StoryEditor() {
@@ -55,19 +55,15 @@ export default function StoryEditor() {
     id: params.id as string,
     title: "Judul Cerita Baru",
     status: "draft", 
+    coverImage: null,
+    certificateImage: null,
     preTest: [],
-    chapters: [
-      { 
-        id: "ch1", 
-        title: "Chapter 1", 
-        pages: [] 
-      }
-    ],
+    chapters: [{ id: "ch1", title: "Chapter 1", pages: [] }],
     postTest: []
   });
 
-  // UI Default States
-  const [activeMode, setActiveMode] = useState<"pre-test" | "post-test" | "chapter">("chapter");
+  // UI Default
+  const [activeMode, setActiveMode] = useState<"settings" | "pre-test" | "post-test" | "chapter">("settings");
   const [activeChapterId, setActiveChapterId] = useState<string>(story.chapters[0]?.id || "");
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"structure" | "list" | "editor">("structure");
@@ -75,13 +71,29 @@ export default function StoryEditor() {
   const currentChapter = story.chapters.find(c => c.id === activeChapterId);
   const currentPage = currentChapter?.pages.find(p => p.id === activePageId);
 
-  // HANDLERS untuk chapter
+  // HANDLER COVER & SERTIFIKAT CERITA
+  const handleStoryMediaUpload = (e: ChangeEvent<HTMLInputElement>, field: 'coverImage' | 'certificateImage') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar! Maksimal 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    setStory(prev => ({ ...prev, [field]: imageUrl }));
+    toast.success(`${field === 'coverImage' ? 'Cover Cerita' : 'Sertifikat'} berhasil diunggah!`);
+  };
+
+  const handleRemoveStoryMedia = (field: 'coverImage' | 'certificateImage') => {
+    setStory(prev => ({ ...prev, [field]: null }));
+  };
+
+  // HANDLER CHAPTER
   const handleAddChapter = () => {
-    const newChapter: Chapter = {
-      id: Date.now().toString(),
-      title: `Chapter ${story.chapters.length + 1}`,
-      pages: []
-    };
+    const newChapter: Chapter = { id: Date.now().toString(), title: `Chapter ${story.chapters.length + 1}`, pages: [] };
     setStory({ ...story, chapters: [...story.chapters, newChapter] });
     setActiveChapterId(newChapter.id);
     setActiveMode("chapter");
@@ -96,18 +108,11 @@ export default function StoryEditor() {
     }
   };
 
-  // HANDLERS untuk pre-test & post-test
+  // HANDLER PRE-TEST & POST-TEST
   const handleAddTestQuestion = (target: "pre" | "post") => {
-    const newQ: QuizItem = {
-      id: Date.now().toString(),
-      question: "",
-      options: [
-        { id: "0", text: "", isCorrect: true }, 
-        { id: "1", text: "", isCorrect: false }, 
-        { id: "2", text: "", isCorrect: false }, 
-        { id: "3", text: "", isCorrect: false },
-        { id: "4", text: "", isCorrect: false }
-      ]
+    const newQ: TestItem = {
+      id: Date.now().toString(), question: "",
+      options: [ { id: "0", text: "", isCorrect: true }, { id: "1", text: "", isCorrect: false }, { id: "2", text: "", isCorrect: false }, { id: "3", text: "", isCorrect: false }, { id: "4", text: "", isCorrect: false } ]
     };
     if (target === "pre") setStory({ ...story, preTest: [...story.preTest, newQ] });
     else setStory({ ...story, postTest: [...story.postTest, newQ] });
@@ -152,31 +157,17 @@ export default function StoryEditor() {
     else setStory({ ...story, postTest: story.postTest.filter(q => q.id !== qId) });
   };
 
-
-  // HANDLERS untuk halaman story/kuis dalam chapter
+  // HANDLER PAGE (STORY & QUIZ DALAM CHAPTER)
   const handleAddPage = (type: "story" | "quiz") => {
     if (!activeChapterId) return;
     const newPage: StoryPage = {
-      id: Date.now().toString(),
-      type,
-      title: type === "story" ? "Halaman Baru" : "Kuis Baru",
-      content: "",
-      image: null, // Init image
-      quizOptions: type === 'quiz' ? [
-        { text: "", feedback: "" },
-        { text: "", feedback: "" },
-        { text: "", feedback: "" },
-        { text: "", feedback: "" },
-        { text: "", feedback: "" }
-      ] : undefined,
+      id: Date.now().toString(), type, title: type === "story" ? "Halaman Baru" : "Kuis Baru", content: "", image: null,
+      quizOptions: type === 'quiz' ? [ { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" } ] : undefined,
       quizAns: type === 'quiz' ? 0 : undefined
     };
 
     setStory(prev => ({
-      ...prev,
-      chapters: prev.chapters.map(c => 
-        c.id === activeChapterId ? { ...c, pages: [...c.pages, newPage] } : c
-      )
+      ...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: [...c.pages, newPage] } : c)
     }));
     setActivePageId(newPage.id);
     setMobileTab("editor"); 
@@ -185,53 +176,29 @@ export default function StoryEditor() {
   const updatePage = (field: keyof StoryPage, val: any) => {
     if (!activeChapterId || !activePageId) return;
     setStory(prev => ({
-        ...prev,
-        chapters: prev.chapters.map(c => 
-            c.id === activeChapterId ? {
-                ...c,
-                pages: c.pages.map(p => p.id === activePageId ? { ...p, [field]: val } : p)
-            } : c
-        )
+        ...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: c.pages.map(p => p.id === activePageId ? { ...p, [field]: val } : p) } : c)
     }));
   };
 
-  // Logic Upload Gambar
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // 1. Validasi Ukuran (2MB = 2 * 1024 * 1024 bytes)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran file terlalu besar! Maksimal 2MB.");
-      e.target.value = ""; // Reset input
-      return;
-    }
-
-    // 2. Simulasi Upload (Create Object URL untuk Preview)
+    if (file.size > 2 * 1024 * 1024) { toast.error("Ukuran maksimal 2MB."); e.target.value = ""; return; }
     const imageUrl = URL.createObjectURL(file);
     updatePage('image', imageUrl);
-    toast.success("Gambar berhasil diunggah!");
+    toast.success("Gambar halaman berhasil diunggah!");
   };
 
-  const handleRemoveImage = () => {
-    updatePage('image', null);
-  };
-
-  // Handler Opsi Kuis
   const updateQuizOption = (optIdx: number, field: 'text' | 'feedback', val: string) => {
     if (!currentPage || !currentPage.quizOptions) return;
     const newOpts = [...currentPage.quizOptions];
-    // Memperbarui properti spesifik (text atau feedback) pada indeks yang dipilih
     newOpts[optIdx] = { ...newOpts[optIdx], [field]: val };
     updatePage('quizOptions', newOpts);
   };
 
   const handleDeletePage = (pId: string) => {
      if(confirm("Hapus halaman ini?")) {
-        setStory(prev => ({
-            ...prev,
-            chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: c.pages.filter(p => p.id !== pId) } : c)
-        }));
+        setStory(prev => ({ ...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: c.pages.filter(p => p.id !== pId) } : c) }));
         if(activePageId === pId) setActivePageId(null);
      }
   };
@@ -244,7 +211,6 @@ export default function StoryEditor() {
   return (
     <AdminRoute>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
-        {/* Sidebar Admin (Hidden Mobile) */}
         <div className="hidden md:block">
             <AdminSidebar />
         </div>
@@ -296,19 +262,32 @@ export default function StoryEditor() {
             {/* 1. KOLOM STRUKTUR */}
             <div className={`${mobileTab === 'structure' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 bg-white border-r border-gray-200 overflow-y-auto`}>
               <div className="p-4 space-y-6">
+                
+                {/* PENGATURAN UMUM */}
+                <div>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase mb-2 px-2">Pengaturan Umum</h3>
+                  <button
+                    onClick={() => { setActiveMode("settings"); setActivePageId(null); setMobileTab("editor"); }}
+                    className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'settings' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                  >
+                    <ImageIcon className="w-4 h-4" /> Cover & Sertifikat
+                  </button>
+                </div>
+
+                {/* Pretest-Posttest */}
                 <div>
                   <h3 className="text-xs font-bold text-gray-400 uppercase mb-2 px-2">Asesmen Global</h3>
                   <div className="space-y-1">
                     <button
                       onClick={() => { setActiveMode("pre-test"); setActivePageId(null); setMobileTab("list"); }}
-                      className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'pre-test' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                      className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'pre-test' ? 'bg-orange-50 text-orange-700 border border-orange-200 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
                     >
                       <CheckSquare className="w-4 h-4" /> Pre-Test
                       <span className="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{story.preTest.length}</span>
                     </button>
                     <button
                       onClick={() => { setActiveMode("post-test"); setActivePageId(null); setMobileTab("list"); }}
-                      className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'post-test' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                      className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'post-test' ? 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
                     >
                       <FileText className="w-4 h-4" /> Post-Test
                       <span className="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{story.postTest.length}</span>
@@ -316,6 +295,7 @@ export default function StoryEditor() {
                   </div>
                 </div>
 
+                {/* Chapter */}
                 <div>
                   <div className="flex justify-between items-center px-2 mb-2">
                     <h3 className="text-xs font-bold text-gray-400 uppercase">Daftar Chapter</h3>
@@ -343,9 +323,9 @@ export default function StoryEditor() {
               </div>
             </div>
 
-            {/* 2. KOLOM TENGAH */}
-            <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto`}>
-                {activeMode !== 'chapter' ? (
+            {/* 2. KOLOM TENGAH (Disembunyikan jika Mode Pengaturan aktif) */}
+            <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} ${activeMode === 'settings' ? 'md:hidden' : 'md:flex'} flex-col w-full md:w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto`}>
+                {activeMode !== 'chapter' && activeMode !== 'settings' ? (
                     <div className="p-4 space-y-4">
                         <div className={`p-4 rounded-lg border text-sm ${activeMode === 'pre-test' ? 'bg-orange-100 border-orange-200 text-orange-800' : 'bg-purple-100 border-purple-200 text-purple-800'}`}>
                             Mode: <b>{activeMode === 'pre-test' ? 'Pre-Test' : 'Post-Test'}</b>
@@ -369,39 +349,113 @@ export default function StoryEditor() {
                         ))}
                         <Button onClick={() => handleAddTestQuestion(activeMode === 'pre-test' ? 'pre' : 'post')} variant="outline" className="w-full border-dashed h-12"><Plus className="w-4 h-4 mr-2" /> Tambah Soal</Button>
                     </div>
-                ) : (
-                    currentChapter && (
-                        <div className="p-4 space-y-4">
-                            <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
-                                <label className="text-[10px] font-bold text-blue-500 uppercase">Judul Chapter</label>
-                                <Input value={currentChapter.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setStory(prev => ({...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? {...c, title: e.target.value} : c)}))} className="font-bold border-none px-0 h-auto focus-visible:ring-0 text-gray-800" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase px-1">Timeline Halaman</label>
-                                {currentChapter.pages.map((page, idx) => (
-                                    <div key={page.id} onClick={() => { setActivePageId(page.id); setMobileTab("editor"); }} className={`p-3 bg-white border rounded-lg cursor-pointer hover:shadow-md transition-all flex items-center gap-3 group ${activePageId === page.id ? 'ring-2 ring-blue-500 border-blue-500 z-10' : 'border-gray-200'}`}>
-                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold border shrink-0 ${page.type === 'story' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{page.type === 'story' ? 'S' : 'Q'}</div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">{page.type}</p>
-                                            <p className="text-sm font-medium truncate">{page.title}</p>
-                                        </div>
-                                        <button onClick={(e: MouseEvent<HTMLButtonElement>) => {e.stopPropagation(); handleDeletePage(page.id)}} className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3 h-3"/></button>
-                                        {activePageId === page.id && <ChevronRight className="w-4 h-4 text-blue-500"/>}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                <Button onClick={() => handleAddPage('story')} variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50 h-10">+ Story</Button>
-                                <Button onClick={() => handleAddPage('quiz')} variant="outline" size="sm" className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 h-10">+ Quiz</Button>
-                            </div>
+                ) : activeMode === 'chapter' && currentChapter ? (
+                    <div className="p-4 space-y-4">
+                        <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                            <label className="text-[10px] font-bold text-blue-500 uppercase">Judul Chapter</label>
+                            <Input value={currentChapter.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setStory(prev => ({...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? {...c, title: e.target.value} : c)}))} className="font-bold border-none px-0 h-auto focus-visible:ring-0 text-gray-800" />
                         </div>
-                    )
-                )}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase px-1">Timeline Halaman</label>
+                            {currentChapter.pages.map((page, idx) => (
+                                <div key={page.id} onClick={() => { setActivePageId(page.id); setMobileTab("editor"); }} className={`p-3 bg-white border rounded-lg cursor-pointer hover:shadow-md transition-all flex items-center gap-3 group ${activePageId === page.id ? 'ring-2 ring-blue-500 border-blue-500 z-10' : 'border-gray-200'}`}>
+                                    <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold border shrink-0 ${page.type === 'story' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}>{page.type === 'story' ? 'S' : 'Q'}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">{page.type}</p>
+                                        <p className="text-sm font-medium truncate">{page.title}</p>
+                                    </div>
+                                    <button onClick={(e: MouseEvent<HTMLButtonElement>) => {e.stopPropagation(); handleDeletePage(page.id)}} className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3 h-3"/></button>
+                                    {activePageId === page.id && <ChevronRight className="w-4 h-4 text-blue-500"/>}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                            <Button onClick={() => handleAddPage('story')} variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50 h-10">+ Story</Button>
+                            <Button onClick={() => handleAddPage('quiz')} variant="outline" size="sm" className="text-yellow-600 border-yellow-200 hover:bg-yellow-50 h-10">+ Quiz</Button>
+                        </div>
+                    </div>
+                ) : null}
             </div>
 
             {/* 3. KOLOM KANAN (EDITOR) */}
             <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-1 bg-white p-4 md:p-8 overflow-y-auto`}>
-               {activeMode === 'chapter' && currentPage ? (
+               
+               {/* TAMPILAN MODE PENGATURAN (COVER & SERTIFIKAT) */}
+               {activeMode === 'settings' ? (
+                   <div className="w-full max-w-3xl mx-auto animate-in fade-in duration-500 pb-20 md:pb-0">
+                       <div className="mb-6 flex items-center gap-3 pb-4 border-b">
+                           <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-indigo-100 text-indigo-700">
+                               Pengaturan Visual Cerita
+                           </span>
+                       </div>
+
+                       <div className="space-y-8">
+                           {/* UPLOAD COVER */}
+                           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                             <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                 <ImageIcon className="w-5 h-5 text-gray-500" /> Cover Image Cerita
+                             </h3>
+                             <p className="text-sm text-gray-500 mb-6">Gambar ini akan ditampilkan sebagai sampul cerita di halaman Dashboard. Rasio yang disarankan adalah 3:4 (Portrait).</p>
+                             
+                             {story.coverImage ? (
+                                 <div className="relative inline-block">
+                                    <img src={story.coverImage} alt="Cover Preview" className="h-64 md:h-80 object-cover rounded-xl shadow-md border border-gray-200" />
+                                    <button onClick={() => handleRemoveStoryMedia('coverImage')} className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow-md hover:bg-red-600 transition-colors">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                             ) : (
+                                 <label className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-10 text-center hover:bg-indigo-50 hover:border-indigo-400 transition-all cursor-pointer">
+                                    <UploadCloud className="w-10 h-10 text-indigo-500 mb-4" />
+                                    <span className="text-base font-bold text-indigo-600">Klik untuk upload Cover</span>
+                                    <span className="text-sm text-gray-400 mt-1">Maks. 2MB (JPG, PNG)</span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleStoryMediaUpload(e, 'coverImage')} />
+                                 </label>
+                             )}
+                           </div>
+
+                           {/* UPLOAD CERTIFICATE */}
+                           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                             <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                 <Award className="w-5 h-5 text-gray-500" /> Template Sertifikat Mentah
+                             </h3>
+                             
+                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-6">
+                                <p className="text-sm text-amber-800 font-bold mb-1">Panduan Pembuatan Sertifikat:</p>
+                                <p className="text-sm text-amber-700 mb-3 leading-relaxed">
+                                  Unggah desain sertifikat yang **sudah ada judul ceritanya**, namun biarkan area **Nama Responden** dan **Predikat/Nilai** kosong. Sistem EpoStory akan mengisi teks dinamis tersebut secara otomatis di atas gambar.
+                                </p>
+                                <a 
+                                  href="https://canva.link/q3sd7z9sqdb8t0m" 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-bold hover:bg-amber-200 transition-colors"
+                                >
+                                    <ExternalLink className="w-4 h-4" /> Template Canva Sertifikat
+                                </a>
+                             </div>
+                             
+                             {story.certificateImage ? (
+                                 <div className="relative w-full max-w-2xl">
+                                    <img src={story.certificateImage} alt="Certificate Preview" className="w-full aspect-[1.414/1] object-cover rounded-xl shadow-md border border-gray-200" />
+                                    <button onClick={() => handleRemoveStoryMedia('certificateImage')} className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow-md hover:bg-red-600 transition-colors">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                             ) : (
+                                 <label className="border-2 border-dashed border-gray-300 rounded-xl aspect-[1.414/1] max-w-2xl flex flex-col items-center justify-center p-8 text-center hover:bg-amber-50 hover:border-amber-400 transition-all cursor-pointer">
+                                    <UploadCloud className="w-10 h-10 text-amber-500 mb-4" />
+                                    <span className="text-base font-bold text-amber-600">Klik untuk upload Sertifikat</span>
+                                    <span className="text-sm text-gray-500 mt-1">Gunakan resolusi tinggi dengan rasio Lanskap Kertas A4</span>
+                                    <span className="text-xs text-gray-400 mt-2">Maks. 2MB (JPG, PNG)</span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleStoryMediaUpload(e, 'certificateImage')} />
+                                 </label>
+                             )}
+                           </div>
+                       </div>
+                   </div>
+               ) : activeMode === 'chapter' && currentPage ? (
+                   /* TAMPILAN EDITOR PAGE (STORY / QUIZ) */
                    <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 md:pb-0">
                        <div className="mb-6 flex items-center gap-3 pb-4 border-b">
                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${currentPage.type === 'story' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
@@ -417,7 +471,6 @@ export default function StoryEditor() {
                                <Input value={currentPage.title} onChange={(e: ChangeEvent<HTMLInputElement>) => updatePage('title', e.target.value)} className="text-lg font-bold" />
                            </div>
 
-                           {/* FITUR UPLOAD GAMBAR (HANYA UNTUK STORY) */}
                            {currentPage.type === 'story' && (
                              <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-100 transition-colors">
                                 <label className="block text-sm font-bold text-gray-500 mb-2">Ilustrasi Cerita (Opsional)</label>
@@ -426,7 +479,7 @@ export default function StoryEditor() {
                                   <div className="relative group inline-block">
                                     <img src={currentPage.image} alt="Preview" className="h-48 object-cover rounded-lg shadow-md border" />
                                     <button 
-                                      onClick={handleRemoveImage}
+                                      onClick={() => updatePage('image', null)}
                                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                                     >
                                       <X className="w-4 h-4" />
@@ -438,7 +491,7 @@ export default function StoryEditor() {
                                       <div className="bg-white p-3 rounded-full shadow-sm">
                                         <UploadCloud className="w-6 h-6 text-blue-500" />
                                       </div>
-                                      <span className="text-sm text-blue-600 font-medium hover:underline">Klik untuk upload gambar</span>
+                                      <span className="text-sm text-blue-600 font-medium hover:underline">Klik untuk upload gambar ilustrasi</span>
                                       <span className="text-xs text-gray-400">Maks. 2MB (JPG, PNG)</span>
                                     </label>
                                     <input 
@@ -463,7 +516,6 @@ export default function StoryEditor() {
                                />
                            </div>
 
-                           {/* FORM QUIZ/KUIS */}
                            {currentPage.type === 'quiz' && (
                             <div className="bg-yellow-50/50 border border-yellow-100 rounded-xl p-4 md:p-6 space-y-6">
                                 <div>
@@ -482,14 +534,12 @@ export default function StoryEditor() {
                                                     title="Tandai sebagai jawaban benar" 
                                                 />
                                                 <div className="flex-1 space-y-3">
-                                                    {/* Input untuk Teks Jawaban */}
                                                     <Input
                                                       value={opt.text} 
                                                       onChange={(e: ChangeEvent<HTMLInputElement>) => updateQuizOption(i, 'text', e.target.value)} 
                                                       placeholder={`Opsi ${String.fromCharCode(65 + i)}`} 
                                                       className={`bg-white ${currentPage.quizAns === i ? 'font-semibold border-green-200 bg-green-50/30' : ''}`} 
                                                     />
-                                                    {/* Input untuk Feedback Spesifik Opsi Ini */}
                                                     <Input
                                                       value={opt.feedback} 
                                                       onChange={(e: ChangeEvent<HTMLInputElement>) => updateQuizOption(i, 'feedback', e.target.value)} 
@@ -509,8 +559,8 @@ export default function StoryEditor() {
                ) : (
                    <div className="h-full flex flex-col items-center justify-center text-gray-300 p-8 text-center">
                        <Layers className="w-16 h-16 mb-4 opacity-20" />
-                       <p className="text-lg font-medium text-gray-400">Tab ini untuk mengedit story/kuis chapter.</p>
-                       <Button variant="outline" className="mt-4 md:hidden" onClick={() => setMobileTab('list')}>Buka Daftar</Button>
+                       <p className="text-lg font-medium text-gray-400">Pilih menu di samping untuk mulai mengedit.</p>
+                       <Button variant="outline" className="mt-4 md:hidden" onClick={() => setMobileTab('structure')}>Buka Struktur</Button>
                    </div>
                )}
             </div>
@@ -518,8 +568,10 @@ export default function StoryEditor() {
 
           {/* MOBILE TAB BAR */}
           <div className="md:hidden border-t border-gray-200 bg-white flex justify-around p-2 pb-safe z-30 shrink-0">
-             <button onClick={() => setMobileTab("structure")} className={`flex flex-col items-center p-2 rounded-lg w-full transition-colors ${mobileTab === 'structure' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}><Layout className="w-5 h-5 mb-1" /><span className="text-[10px] font-bold">STRUKTUR</span></button>
-             <button onClick={() => setMobileTab("list")} className={`flex flex-col items-center p-2 rounded-lg w-full transition-colors ${mobileTab === 'list' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}><List className="w-5 h-5 mb-1" /><span className="text-[10px] font-bold">DAFTAR</span></button>
+             <button onClick={() => setMobileTab("structure")} className={`flex flex-col items-center p-2 rounded-lg w-full transition-colors ${mobileTab === 'structure' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}><Layout className="w-5 h-5 mb-1" /><span className="text-[10px] font-bold">MENU</span></button>
+             {activeMode !== 'settings' && (
+                 <button onClick={() => setMobileTab("list")} className={`flex flex-col items-center p-2 rounded-lg w-full transition-colors ${mobileTab === 'list' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}><List className="w-5 h-5 mb-1" /><span className="text-[10px] font-bold">DAFTAR</span></button>
+             )}
              <button onClick={() => setMobileTab("editor")} className={`flex flex-col items-center p-2 rounded-lg w-full transition-colors ${mobileTab === 'editor' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}><Edit3 className="w-5 h-5 mb-1" /><span className="text-[10px] font-bold">EDITOR</span></button>
           </div>
 
