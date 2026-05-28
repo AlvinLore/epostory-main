@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -20,6 +21,7 @@ const navItems = [
   { label: "Manajemen Cerita", path: "/admin/stories", icon: BookOpen },
   { label: "Analisis", path: "/admin/analytics", icon: BarChart3 },
   { label: "Pengaturan", path: "/admin/settings", icon: Settings },
+  { label: "Profil Admin", path: "/admin/profile", icon: UserCircle },
 ];
 
 export function AdminSidebar() {
@@ -36,7 +38,7 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* --- MOBILE HAMBURGER BUTTON --- */}
+      {/* MOBILE HAMBURGER BUTTON */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors shadow-lg"
@@ -45,7 +47,7 @@ export function AdminSidebar() {
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      {/* --- MOBILE OVERLAY (Background Gelap) --- */}
+      {/* MOBILE OVERLAY (Background Gelap) */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
@@ -53,7 +55,7 @@ export function AdminSidebar() {
         />
       )}
 
-      {/* --- SIDEBAR CONTAINER --- */}
+      {/* SIDEBAR CONTAINER */}
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out",
