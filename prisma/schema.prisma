@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model badges {
+  id            String        @id @db.VarChar(50)
+  name          String        @db.VarChar(100)
+  description   String        @db.Text
+  icon_image    String?       @db.VarChar(255)
+  criteria_type String?       @db.VarChar(50)
+  created_at    DateTime      @default(now()) @db.Timestamp(0)
+  user_badges   user_badges[]
+}
+
+model chapters {
+  id          String  @id @db.VarChar(50)
+  story_id    String  @db.VarChar(50)
+  title       String  @db.VarChar(255)
+  order_index Int
+  stories     stories @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "chapters_ibfk_1")
+  pages       pages[]
+
+  @@index([story_id], map: "story_id")
+}
+
+model page_quiz_options {
+  id         String  @id @db.VarChar(50)
+  page_id    String  @db.VarChar(50)
+  text       String  @db.VarChar(255)
+  feedback   String? @db.Text
+  is_correct Boolean @default(false)
+  pages      pages   @relation(fields: [page_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "page_quiz_options_ibfk_1")
+
+  @@index([page_id], map: "page_id")
+}
+
+model pages {
+  id                String              @id @db.VarChar(50)
+  chapter_id        String              @db.VarChar(50)
+  type              pages_type
+  title             String              @db.VarChar(255)
+  content           String?             @db.Text
+  image             String?             @db.VarChar(255)
+  order_index       Int
+  page_quiz_options page_quiz_options[]
+  chapters          chapters            @relation(fields: [chapter_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pages_ibfk_1")
+
+  @@index([chapter_id], map: "chapter_id")
+}
+
+model stories {
+  id                String          @id @db.VarChar(50)
+  number            Int
+  title             String          @db.VarChar(255)
+  topic             String?         @db.VarChar(100)
+  synopsis          String?         @db.Text
+  status            stories_status? @default(draft)
+  cover_image       String?         @db.VarChar(255)
+  certificate_image String?         @db.VarChar(255)
+  created_at        DateTime        @default(now()) @db.Timestamp(0)
+  updated_at        DateTime        @default(now()) @db.Timestamp(0)
+  chapters          chapters[]
+  test_items        test_items[]
+  user_progress     user_progress[]
+}
+
+model test_items {
+  id           String          @id @db.VarChar(50)
+  story_id     String          @db.VarChar(50)
+  type         test_items_type
+  question     String          @db.Text
+  created_at   DateTime        @default(now()) @db.Timestamp(0)
+  stories      stories         @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_items_ibfk_1")
+  test_options test_options[]
+
+  @@index([story_id], map: "story_id")
+}
+
+model test_options {
+  id           String     @id @db.VarChar(50)
+  test_item_id String     @db.VarChar(50)
+  text         String     @db.VarChar(255)
+  is_correct   Boolean    @default(false)
+  test_items   test_items @relation(fields: [test_item_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_options_ibfk_1")
+
+  @@index([test_item_id], map: "test_item_id")
+}
+
+model user_badges {
+  id        String   @id @db.VarChar(50)
+  user_id   String   @db.VarChar(50)
+  badge_id  String   @db.VarChar(50)
+  earned_at DateTime @default(now()) @db.Timestamp(0)
+  users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_badges_ibfk_1")
+  badges    badges   @relation(fields: [badge_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_badges_ibfk_2")
+
+  @@unique([user_id, badge_id], map: "user_id")
+  @@index([badge_id], map: "badge_id")
+}
+
+model user_progress {
+  id                    String                @id @db.VarChar(50)
+  user_id               String                @db.VarChar(50)
+  story_id              String                @db.VarChar(50)
+  progress_percentage   Int?                  @default(0)
+  pre_test_score        Int?
+  post_test_score       Int?
+  intermezzo_quiz_score Int?
+  status                user_progress_status? @default(started)
+  last_read_at          DateTime              @default(now()) @db.Timestamp(0)
+  users                 users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_1")
+  stories               stories               @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_2")
+
+  @@unique([user_id, story_id], map: "user_id")
+  @@index([story_id], map: "story_id")
+}
+
+model users {
+  id            String          @id @db.VarChar(50)
+  name          String          @db.VarChar(100)
+  email         String          @unique(map: "email") @db.VarChar(100)
+  password      String          @db.VarChar(255)
+  role          users_role?     @default(user)
+  gender        users_gender?   @default(EMPTY_ENUM_VALUE)
+  created_at    DateTime        @default(now()) @db.Timestamp(0)
+  user_badges   user_badges[]
+  user_progress user_progress[]
+}
+
+enum pages_type {
+  story
+  quiz
+}
+
+enum test_items_type {
+  PRE_TEST
+  POST_TEST
+}
+
+enum users_role {
+  user
+  admin
+}
+
+enum stories_status {
+  draft
+  published
+}
+
+enum users_gender {
+  Laki_laki        @map("Laki-laki")
+  Perempuan
+  EMPTY_ENUM_VALUE @map("")
+}
+
+enum user_progress_status {
+  started
+  completed
+}
