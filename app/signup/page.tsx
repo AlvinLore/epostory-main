@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle } from "lucide-react";
-import { toast } from "sonner";
 
 export default function SignupPage() {
   const navigate = useRouter();
-  const { register } = useAuth();
+  const { signup } = useAuth();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -29,7 +28,7 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    // Validasi dasar
+    //Validasi dasar
     if (!formData.name || !formData.email || !formData.password) {
       setError("Harap isi semua kolom wajib.");
       return;
@@ -42,24 +41,18 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const userData = await register(
+      const isSuccess = await signup(
         formData.name,
         formData.email,
         formData.password,
-        formData.gender as "" | "Laki-laki" | "Perempuan"
+        formData.gender
       );
-      
-      toast.success("Registrasi Berhasil!", {
-        description: `Selamat bergabung, ${userData.name}!`,
-      });
 
-      // Arahkan ke dashboard user
-      navigate.push("/dashboard");
+      if (isSuccess) {
+        navigate.push("/login");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registrasi gagal. Coba lagi.");
-      toast.error("Registrasi Gagal", {
-        description: "Silakan periksa kembali data Anda.",
-      });
+      setError("Terjadi kesalahan sistem. Coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -159,8 +152,8 @@ export default function SignupPage() {
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="" disabled>Pilih Jenis Kelamin</option>
-                  <option value="Laki-laki">Laki-laki</option>
-                  <option value="Perempuan">Perempuan</option>
+                  <option value="L">Laki-laki</option>
+                  <option value="P">Perempuan</option>
                 </select>
               </div>
 

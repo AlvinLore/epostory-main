@@ -24,26 +24,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const userData = await login(email, password);
+      const result = await login(email, password);
       
-      toast.success("Login Berhasil!", {
-        description: `Selamat datang kembali, ${userData.name}`,
-      });
-
-      // Masuk berdasarkan role
-      if (userData.role === "admin") {
-        navigate.push("/admin/dashboard");
-      } else {
-        // role user biasa
-        navigate.push("/dashboard");
+      // Cek apakah loginnya benar-benar sukses (bernilai true)
+      if (result.success) {
+        // Masuk berdasarkan role
+        if (result.role === "admin") {
+          navigate.push("/admin/dashboard");
+        } else {
+          navigate.push("/dashboard");
+        }
       }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Login gagal. Coba lagi."
       );
-      toast.error("Login Gagal", {
-        description: "Periksa kembali email dan password Anda.",
-      });
     } finally {
       setIsLoading(false);
     }

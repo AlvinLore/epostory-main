@@ -1,181 +1,133 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { toast } from "sonner";
 
+//Definisi Tipe Data User sesuai Database MySQL
 interface User {
   id: string;
-  email: string;
   name: string;
+  email: string;
   role: "user" | "admin";
-  gender?: "Laki-laki" | "Perempuan" | "";
+  gender?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  register: (name: string, email: string, password: string, gender: "Laki-laki" | "Perempuan" | "") => Promise<User>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; role?: string }>;
+  signup: (name: string, email: string, password: string, gender: string) => Promise<boolean>;
   logout: () => void;
+  updateProfile: (name: string, gender: string) => Promise<boolean>;
+  changePassword: (current: string, newPass: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Dummy
-const DUMMY_USER = {
-  id: "1",
-  email: "demo@epostory.com",
-  password: "demo123",
-  name: "Alex Sitompul Panjaitan",
-  role: "user" as const,
-  gender: "Laki-laki" as const
-};
-
-const DUMMY_ADMIN = {
-  id: "2",
-  email: "admin@epostory.com",
-  password: "admin123",
-  name: "Admin User",
-  role: "admin" as const,
-  gender: "Laki-laki" as const
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // FUNGSI HELPER: Mengambil atau membuat "Database" pengguna di localStorage (Hanya untuk simulasi, bukan untuk produksi)
-  const getUsersDB = () => {
-    if (typeof window !== "undefined") {
-      const storedDB = localStorage.getItem("epostory_users_db");
-      if (storedDB) return JSON.parse(storedDB);
-      
-      // Jika belum ada, buat baru dengan data dummy
-      const initialDB = [DUMMY_USER, DUMMY_ADMIN];
-      localStorage.setItem("epostory_users_db", JSON.stringify(initialDB));
-      return initialDB;
-    }
-    return [DUMMY_USER, DUMMY_ADMIN];
-  };
-
-  const saveUsersDB = (db: any[]) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("epostory_users_db", JSON.stringify(db));
-    }
-  };
-
-  // Cek apakah user sudah login saat aplikasi dimuat
+  //Efek untuk mengecek sesi login di localStorage saat aplikasi pertama kali dimuat
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("epostory_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error("Failed to parse stored user:", error);
-          localStorage.removeItem("epostory_user");
-        }
+    const storedUser = localStorage.getItem("epostory_user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        localStorage.removeItem("epostory_user");
       }
-      setIsLoading(false);
     }
+    setLoading(false);
   }, []);
 
-  // LOGIN
-  const login = async (email: string, password: string) => {
-    return new Promise<User>((resolve, reject) => {
-      setTimeout(() => {
-        const db = getUsersDB();
-        const foundUser = db.find((u: any) => u.email === email && u.password === password);
+  //Fungsi Login
+  const login = async (email: string, password: string): Promise<{ success: boolean; role?: string }> => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-        if (foundUser) {
-          const userData: User = {
-            id: foundUser.id,
-            email: foundUser.email,
-            name: foundUser.name,
-            role: foundUser.role,
-            gender: foundUser.gender
-          };
-          setUser(userData);
-          localStorage.setItem("epostory_user", JSON.stringify(userData));
-          resolve(userData);
-        } else {
-          reject(new Error("Email atau password salah"));
-        }
-      }, 500);
-    });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        toast.error("Gagal Masuk", { description: result.message || "Email atau password salah." });
+        return { success: false };
+      }
+
+      //Simpan data user ke state dan localStorage (Sesi Aman)
+      setUser(result.data);
+      localStorage.setItem("epostory_user", JSON.stringify(result.data));
+      
+      toast.success("Log masuk Berhasil", { description: `Selamat datang kembali, ${result.data.name}!` });
+      return { success: true, role: result.data.role };
+    } catch (error) {
+      console.error("Login Error:", error);
+      toast.error("Ralat Sistem", { description: "Gagal terhubung ke server." });
+      return { success: false };
+    }
   };
 
-  // REGISTER
-  const register = async (name: string, email: string, password: string, gender: "Laki-laki" | "Perempuan" | "") => {
-    return new Promise<User>((resolve, reject) => {
-      setTimeout(() => {
-        const db = getUsersDB();
-        
-        // Cek email sudah ada atau belum
-        if (db.some((u: any) => u.email === email)) {
-          reject(new Error("Email sudah terdaftar. Silakan gunakan email lain."));
-          return;
-        }
+  //Fungsi Signup (Register)
+  const signup = async (name: string, email: string, password: string, gender: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, gender }),
+      });
 
-        const newUser = {
-          id: Date.now().toString(), // Generate ID unik pakai waktu
-          email,
-          password,
-          name,
-          role: "user" as const, // Default user biasa
-          gender
-        };
+      const result = await res.json();
 
-        db.push(newUser);
-        saveUsersDB(db);
+      if (!res.ok || !result.success) {
+        toast.error("Pendaftaran Gagal", { description: result.message || "Silakan periksa kembali data Anda." });
+        return false;
+      }
 
-        // Login otomatis setelah daftar
-        const userData: User = { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role, gender: newUser.gender };
-        setUser(userData);
-        localStorage.setItem("epostory_user", JSON.stringify(userData));
-        resolve(userData);
-      }, 600);
-    });
+      toast.success("Pendaftaran Berhasil", { description: "Silakan log masuk menggunakan akun baru Anda." });
+      return true;
+    } catch (error) {
+      console.error("Signup Error:", error);
+      toast.error("Ralat Sistem", { description: "Gagal terhubung ke server." });
+      return false;
+    }
   };
 
-  // FUNGSI GANTI PASSWORD
-  const changePassword = async (oldPassword: string, newPassword: string) => {
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        if (!user) {
-          reject(new Error("Anda belum login"));
-          return;
-        }
-
-        const db = getUsersDB();
-        const userIndex = db.findIndex((u: any) => u.id === user.id);
-
-        if (userIndex === -1) {
-          reject(new Error("Akun tidak ditemukan di database"));
-          return;
-        }
-
-        // Validasi password lama
-        if (db[userIndex].password !== oldPassword) {
-          reject(new Error("Password saat ini salah"));
-          return;
-        }
-
-        // Update password baru
-        db[userIndex].password = newPassword;
-        saveUsersDB(db);
-        resolve();
-      }, 500);
-    });
-  };
-
+  //Fungsi Logout
   const logout = () => {
     setUser(null);
     localStorage.removeItem("epostory_user");
+    toast.info("Anda telah log keluar");
+  };
+
+  //Fungsi Update Profil (Simulasi Frontend sebelum API Profil Dibuat)
+  const updateProfile = async (name: string, gender: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      //Sementara perbarui state lokal & localStorage, nanti kita sambungkan ke API khusus profil
+      const updatedUser = { ...user, name, gender };
+      setUser(updatedUser);
+      localStorage.setItem("epostory_user", JSON.stringify(updatedUser));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  //Fungsi Ganti Password (Simulasi Frontend)
+  const changePassword = async (current: string, newPass: string): Promise<boolean> => {
+    try {
+      //Sementara simulasi sukses, nanti disambungkan ke API Keamanan Profil
+      return true;
+    } catch (error) {
+      return false;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, changePassword, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   );
