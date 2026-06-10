@@ -55,7 +55,7 @@ model pages {
 
 model stories {
   id                String          @id @db.VarChar(50)
-  number            Int
+  number            String          @unique(map: "number") @db.VarChar(50)
   title             String          @db.VarChar(255)
   topic             String?         @db.VarChar(100)
   synopsis          String?         @db.Text

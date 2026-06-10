@@ -8,16 +8,17 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Image as ImageIcon, Sparkles, Hash, Tag } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CreateStoryPage() {
   const router = useRouter();
   
-  // State Form
+  //State
   const [formData, setFormData] = useState({
     number: "",       // Penomoran cerita selain id (misal: "1", "4")
     title: "",        // Judul cerita
     synopsis: "",     // Ringkasan
-    topic: "",        // Topik (misal: "Air Pollution")
+    topic: "",        // Topik
   });
 
   const handleInputChange = (
@@ -30,15 +31,39 @@ export default function CreateStoryPage() {
     }));
   };
 
-  const handleCreate = () => {
-    // Validasi sederhana
-    if (!formData.title || !formData.number) return;
+  const [isLoading, setIsLoading] = useState(false);
 
-    // Simulasi Create ID Baru
-    const newStoryId = Date.now().toString();
-    
-    // Redirect ke Editor
-    router.push(`/admin/stories/${newStoryId}/editor`);
+  const handleCreate = async () => {
+    //Validasi sederhana
+    if (!formData.title || !formData.number) {
+      toast.error("Data Tidak Lengkap", { description: "Nomor dan Judul cerita wajib diisi."});
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      //Tambahkan data ke API Backend MySQL
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Gagal menyimpan ke database");
+      }
+
+      toast.success("Cerita Berhasil Dibuat!", { description: "Mengarahkan ke editor..."});
+      router.push(`/admin/stories/${result.data.id}/editor`);
+      
+    } catch (error: any) {
+      toast.error("Ralat Sistem", { description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -88,14 +113,14 @@ export default function CreateStoryPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-5">
                         <div className="sm:col-span-4">
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
-                              <Hash className="w-3 h-3 text-gray-400" /> Nomor Cerita
+                              <Hash className="w-3 h-3 text-gray-400" /> Nomor Cerita (ID Buatan)
                             </label>
                             <Input 
                               name="number"
-                              type="number"
+                              type="text"
                               value={formData.number}
                               onChange={handleInputChange}
-                              placeholder="Contoh: 1"
+                              placeholder="Contoh: PU1"
                               className="font-mono"
                             />
                         </div>
@@ -155,10 +180,10 @@ export default function CreateStoryPage() {
                      </Button>
                      <Button 
                        onClick={handleCreate}
-                       disabled={!formData.title || !formData.number}
+                       disabled={!formData.title || !formData.number || isLoading}
                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white shadow-md py-6 sm:py-2 text-base"
                      >
-                        Buat & Buka Editor
+                        {isLoading ? "Memproses..." : "Buat & Buka Editor"}
                      </Button>
                   </div>
                </div>
