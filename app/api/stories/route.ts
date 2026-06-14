@@ -51,3 +51,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: "Gagal membuat cerita baru" }, { status: 500 });
   }
 }
+
+// METHOD DELETE: Menghapus cerita dari database
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: "ID Cerita tidak ditemukan" }, { status: 400 });
+    }
+
+    await prisma.stories.delete({
+      where: { id: id }
+    });
+
+    return NextResponse.json({ success: true, message: "Cerita berhasil dihapus" });
+  } catch (error) {
+    console.error("Delete Story Error:", error);
+    return NextResponse.json({ success: false, message: "Gagal menghapus cerita" }, { status: 500 });
+  }
+}
