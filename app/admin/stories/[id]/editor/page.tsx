@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent, MouseEvent } from "react";
+import { useState, ChangeEvent, MouseEvent, useEffect } from "react";
 import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { 
   Plus, Save, Trash2, FileText, CheckSquare, Layers, 
   ChevronRight, X, Globe, Lock, Layout, List, Edit3, 
-  Image as ImageIcon, UploadCloud, Award, ExternalLink
+  Image as ImageIcon, UploadCloud, Award, ExternalLink, Loader2
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-// TIPE DATA
+//TIPE DATA
 interface TestItem {
   id: string;
   question: string;
@@ -38,6 +38,7 @@ interface Chapter {
 
 interface StoryData {
   id: string;
+  number: string;
   title: string;
   status: "draft" | "published";
   coverImage?: string | null;
@@ -49,56 +50,153 @@ interface StoryData {
 
 export default function StoryEditor() {
   const params = useParams();
+  const router = useRouter();
   
-  // Data Default
+  //State Loading
+  const [isFetching, setIsFetching] = useState(true);
+
+  //Data Default
   const [story, setStory] = useState<StoryData>({
     id: params.id as string,
-    title: "Judul Cerita Baru",
+    number: "",
+    title: "Memuat...",
     status: "draft", 
     coverImage: null,
     certificateImage: null,
     preTest: [],
-    chapters: [{ id: "ch1", title: "Chapter 1", pages: [] }],
+    chapters: [],
     postTest: []
   });
 
-  // UI Default
+  //UI Default
   const [activeMode, setActiveMode] = useState<"settings" | "pre-test" | "post-test" | "chapter">("settings");
-  const [activeChapterId, setActiveChapterId] = useState<string>(story.chapters[0]?.id || "");
+  const [activeChapterId, setActiveChapterId] = useState<string>("");
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"structure" | "list" | "editor">("structure");
+
+  //Menarik data
+  useEffect(() => {
+    const fetchStoryData = async () => {
+      try {
+        const res = await fetch(`/api/stories/${params.id}`);
+        const result = await res.json();
+        
+        if (result.success) {
+          const dbData = result.data;
+          
+          setStory({
+            id: dbData.id,
+            number: dbData.number || "",
+            title: dbData.title,
+            status: dbData.status || "draft",
+            coverImage: dbData.cover_image,
+            certificateImage: dbData.certificate_image,
+            preTest: dbData.test_items.filter((a: any) => a.type === 'PRE_TEST').map((a: any) => ({
+              id: a.id, question: a.question,
+              options: a.test_options.map((o: any) => ({ id: o.id, text: o.text, isCorrect: o.is_correct }))
+            })),
+            postTest: dbData.test_items.filter((a: any) => a.type === 'POST_TEST').map((a: any) => ({
+              id: a.id, question: a.question,
+              options: a.test_options.map((o: any) => ({ id: o.id, text: o.text, isCorrect: o.is_correct }))
+            })),
+            chapters: dbData.chapters.map((c: any) => ({
+              id: c.id, title: c.title,
+              pages: c.pages.map((p: any) => ({
+                id: p.id, type: p.type, title: p.title, content: p.content || "", image: p.image,
+                // Mencari index kunci jawaban yang benar dari page_quiz_options
+                quizAns: p.type === 'quiz' ? p.page_quiz_options.findIndex((qo: any) => qo.is_correct) : undefined,
+                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ text: qo.text, feedback: qo.feedback || "" })) : undefined
+              }))
+            }))
+          });
+
+          if (dbData.chapters.length > 0) setActiveChapterId(dbData.chapters[0].id);
+        } else {
+          toast.error("Gagal memuat cerita", { description: result.message });
+          router.push('/admin/stories'); //Kembalikan ke tabel jika ID tidak valid
+        }
+      } catch (error) {
+        toast.error("Ralat Sistem", { description: "Gagal terhubung ke server." });
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    if (params.id) fetchStoryData();
+  }, [params.id, router]);
+
+  //Fungsi mengubah file gambar menjadi teks Base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = () => resolve(fileReader.result as string);
+      fileReader.onerror = (error) => reject(error);
+    });
+  };
+
+  //Fitur Menyimpan Data
+  const handleSave = () => {
+    //Validasi
+    if (!story.number.trim() || !story.title.trim()) {
+      toast.error("Data Tidak Lengkap", { description: "Nomor dan Judul cerita tidak boleh kosong." });
+      return;
+    }
+
+    const savePromise = new Promise(async (resolve, reject) => {
+      try {
+        const payload = {
+          number: story.number,
+          title: story.title,
+          status: story.status,
+          coverImage: story.coverImage,
+          certificateImage: story.certificateImage,
+          preTest: story.preTest,
+          postTest: story.postTest,
+          chapters: story.chapters
+        };
+
+        const res = await fetch(`/api/stories/${story.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await res.json();
+        if (result.success) resolve(result);
+        else reject(new Error(result.message));
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    toast.promise(savePromise, {
+      loading: 'Menyimpan cerita...',
+      success: `Cerita "${story.title}" berhasil disimpan!`,
+      error: (err: any) => `${err.message}`,
+    });
+  };
 
   const currentChapter = story.chapters.find(c => c.id === activeChapterId);
   const currentPage = currentChapter?.pages.find(p => p.id === activePageId);
 
-  // HANDLER COVER & SERTIFIKAT CERITA
-  const handleStoryMediaUpload = (e: ChangeEvent<HTMLInputElement>, field: 'coverImage' | 'certificateImage') => {
+  const handleStoryMediaUpload = async (e: ChangeEvent<HTMLInputElement>, field: 'coverImage' | 'certificateImage') => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran file terlalu besar! Maksimal 2MB.");
-      e.target.value = "";
-      return;
-    }
-
-    const imageUrl = URL.createObjectURL(file);
-    setStory(prev => ({ ...prev, [field]: imageUrl }));
-    toast.success(`${field === 'coverImage' ? 'Cover Cerita' : 'Sertifikat'} berhasil diunggah!`);
+    if (file.size > 2 * 1024 * 1024) { toast.error("Ukuran maksimal 2MB."); e.target.value = ""; return; }
+    const base64Image = await convertToBase64(file);
+    setStory(prev => ({ ...prev, [field]: base64Image }));
+    toast.success(`${field === 'coverImage' ? 'Cover' : 'Sertifikat'} diunggah!`);
   };
 
   const handleRemoveStoryMedia = (field: 'coverImage' | 'certificateImage') => {
     setStory(prev => ({ ...prev, [field]: null }));
   };
 
-  // HANDLER CHAPTER
   const handleAddChapter = () => {
     const newChapter: Chapter = { id: Date.now().toString(), title: `Chapter ${story.chapters.length + 1}`, pages: [] };
     setStory({ ...story, chapters: [...story.chapters, newChapter] });
-    setActiveChapterId(newChapter.id);
-    setActiveMode("chapter");
-    setActivePageId(null);
-    setMobileTab("list");
+    setActiveChapterId(newChapter.id); setActiveMode("chapter"); setActivePageId(null); setMobileTab("list");
   };
 
   const handleDeleteChapter = (chId: string) => {
@@ -108,7 +206,6 @@ export default function StoryEditor() {
     }
   };
 
-  // HANDLER PRE-TEST & POST-TEST
   const handleAddTestQuestion = (target: "pre" | "post") => {
     const newQ: TestItem = {
       id: Date.now().toString(), question: "",
@@ -129,8 +226,7 @@ export default function StoryEditor() {
     const list = target === "pre" ? story.preTest : story.postTest;
     const newList = list.map(q => {
         if (q.id === qId) {
-            const newOpts = [...q.options];
-            newOpts[optIdx].text = val;
+            const newOpts = [...q.options]; newOpts[optIdx].text = val;
             return { ...q, options: newOpts };
         }
         return q;
@@ -157,7 +253,6 @@ export default function StoryEditor() {
     else setStory({ ...story, postTest: story.postTest.filter(q => q.id !== qId) });
   };
 
-  // HANDLER PAGE (STORY & QUIZ DALAM CHAPTER)
   const handleAddPage = (type: "story" | "quiz") => {
     if (!activeChapterId) return;
     const newPage: StoryPage = {
@@ -165,12 +260,10 @@ export default function StoryEditor() {
       quizOptions: type === 'quiz' ? [ { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" } ] : undefined,
       quizAns: type === 'quiz' ? 0 : undefined
     };
-
     setStory(prev => ({
       ...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: [...c.pages, newPage] } : c)
     }));
-    setActivePageId(newPage.id);
-    setMobileTab("editor"); 
+    setActivePageId(newPage.id); setMobileTab("editor"); 
   };
 
   const updatePage = (field: keyof StoryPage, val: any) => {
@@ -180,13 +273,13 @@ export default function StoryEditor() {
     }));
   };
 
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error("Ukuran maksimal 2MB."); e.target.value = ""; return; }
-    const imageUrl = URL.createObjectURL(file);
-    updatePage('image', imageUrl);
-    toast.success("Gambar halaman berhasil diunggah!");
+    if (file.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB."); e.target.value = ""; return; }
+    const base64Image = await convertToBase64(file);
+    updatePage('image', base64Image); 
+    toast.success("Gambar halaman diunggah!");
   };
 
   const updateQuizOption = (optIdx: number, field: 'text' | 'feedback', val: string) => {
@@ -203,10 +296,20 @@ export default function StoryEditor() {
      }
   };
 
-  const handleSave = () => {
-    console.log("FINAL JSON:", JSON.stringify(story, null, 2));
-    toast.success(`Cerita berhasil disimpan sebagai ${story.status.toUpperCase()}!`);
-  };
+  //UI Loading
+  if (isFetching) {
+    return (
+      <AdminRoute>
+        <div className="flex h-screen items-center justify-center bg-gray-50">
+           <div className="text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-green-600 mx-auto mb-4" />
+              <h2 className="text-lg font-bold text-gray-700">Membuka Editor...</h2>
+              <p className="text-gray-500 text-sm">Menarik struktur cerita dari database</p>
+           </div>
+        </div>
+      </AdminRoute>
+    );
+  }
 
   return (
     <AdminRoute>
@@ -259,7 +362,7 @@ export default function StoryEditor() {
           {/* CONTENT AREA */}
           <div className="flex-1 flex overflow-hidden relative">
             
-            {/* 1. KOLOM STRUKTUR */}
+            {/* 1. KOLOM STRUKTUR (SIDEBAR KIRI) */}
             <div className={`${mobileTab === 'structure' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 bg-white border-r border-gray-200 overflow-y-auto`}>
               <div className="p-4 space-y-6">
                 
@@ -270,7 +373,7 @@ export default function StoryEditor() {
                     onClick={() => { setActiveMode("settings"); setActivePageId(null); setMobileTab("editor"); }}
                     className={`w-full text-left px-3 py-3 rounded-md text-sm font-medium flex items-center gap-3 transition-colors ${activeMode === 'settings' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
                   >
-                    <ImageIcon className="w-4 h-4" /> Cover & Sertifikat
+                    <FileText className="w-4 h-4" /> Info, Cover, Sertifikat
                   </button>
                 </div>
 
@@ -323,7 +426,7 @@ export default function StoryEditor() {
               </div>
             </div>
 
-            {/* 2. KOLOM TENGAH (Disembunyikan jika Mode Pengaturan aktif) */}
+            {/* 2. KOLOM TENGAH (PRE-TEST, POST-TEST, CHAPTER PAGES) */}
             <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} ${activeMode === 'settings' ? 'md:hidden' : 'md:flex'} flex-col w-full md:w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto`}>
                 {activeMode !== 'chapter' && activeMode !== 'settings' ? (
                     <div className="p-4 space-y-4">
@@ -377,19 +480,50 @@ export default function StoryEditor() {
                 ) : null}
             </div>
 
-            {/* 3. KOLOM KANAN (EDITOR) */}
+            {/* 3. KOLOM KANAN (EDITOR / SETTINGS) */}
             <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-1 bg-white p-4 md:p-8 overflow-y-auto`}>
                
-               {/* TAMPILAN MODE PENGATURAN (COVER & SERTIFIKAT) */}
+               {/* TAMPILAN MODE PENGATURAN UMUM */}
                {activeMode === 'settings' ? (
                    <div className="w-full max-w-3xl mx-auto animate-in fade-in duration-500 pb-20 md:pb-0">
                        <div className="mb-6 flex items-center gap-3 pb-4 border-b">
                            <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-indigo-100 text-indigo-700">
-                               Pengaturan Visual Cerita
+                               Pengaturan Utama Cerita
                            </span>
                        </div>
 
                        <div className="space-y-8">
+                           
+                           {/* INFO UTAMA (JUDUL & NOMOR) */}
+                           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                   <FileText className="w-5 h-5 text-gray-500" /> Informasi Utama
+                               </h3>
+                               <div className="space-y-5">
+                                   <div>
+                                       <label className="block text-sm font-medium text-gray-700 mb-1">Judul Cerita</label>
+                                       <Input 
+                                           value={story.title} 
+                                           onChange={(e) => setStory({...story, title: e.target.value})} 
+                                           placeholder="Masukkan judul cerita..."
+                                           className="font-medium bg-gray-50 focus:bg-white"
+                                       />
+                                   </div>
+                                   <div>
+                                       <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Cerita (ID Unik)</label>
+                                       <Input 
+                                           value={story.number} 
+                                           onChange={(e) => setStory({...story, number: e.target.value})} 
+                                           placeholder="Contoh: PU1"
+                                           className="uppercase font-medium bg-gray-50 focus:bg-white"
+                                       />
+                                       <p className="text-xs text-gray-500 mt-2">
+                                           *Nomor ini digunakan sebagai ID rujukan sistem. Harus unik dan tidak boleh sama dengan cerita lain.
+                                       </p>
+                                   </div>
+                               </div>
+                           </div>
+
                            {/* UPLOAD COVER */}
                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -414,7 +548,7 @@ export default function StoryEditor() {
                              )}
                            </div>
 
-                           {/* UPLOAD CERTIFICATE */}
+                           {/* UPLOAD SERTIFIKAT */}
                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                                  <Award className="w-5 h-5 text-gray-500" /> Template Sertifikat Mentah
@@ -494,13 +628,7 @@ export default function StoryEditor() {
                                       <span className="text-sm text-blue-600 font-medium hover:underline">Klik untuk upload gambar ilustrasi</span>
                                       <span className="text-xs text-gray-400">Maks. 2MB (JPG, PNG)</span>
                                     </label>
-                                    <input 
-                                      id="image-upload" 
-                                      type="file" 
-                                      accept="image/*" 
-                                      className="hidden" 
-                                      onChange={handleImageUpload}
-                                    />
+                                    <input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                                   </div>
                                 )}
                              </div>
