@@ -103,7 +103,6 @@ export default function StoryEditor() {
               id: c.id, title: c.title,
               pages: c.pages.map((p: any) => ({
                 id: p.id, type: p.type, title: p.title, content: p.content || "", image: p.image,
-                // Mencari index kunci jawaban yang benar dari page_quiz_options
                 quizAns: p.type === 'quiz' ? p.page_quiz_options.findIndex((qo: any) => qo.is_correct) : undefined,
                 quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ text: qo.text, feedback: qo.feedback || "" })) : undefined
               }))
@@ -113,7 +112,7 @@ export default function StoryEditor() {
           if (dbData.chapters.length > 0) setActiveChapterId(dbData.chapters[0].id);
         } else {
           toast.error("Gagal memuat cerita", { description: result.message });
-          router.push('/admin/stories'); //Kembalikan ke tabel jika ID tidak valid
+          router.push('/admin/stories'); 
         }
       } catch (error) {
         toast.error("Ralat Sistem", { description: "Gagal terhubung ke server." });
@@ -125,14 +124,30 @@ export default function StoryEditor() {
     if (params.id) fetchStoryData();
   }, [params.id, router]);
 
-  //Fungsi mengubah file gambar menjadi teks Base64
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-      fileReader.onload = () => resolve(fileReader.result as string);
-      fileReader.onerror = (error) => reject(error);
+  //FUNGSI UPLOAD KE CLOUDINARY
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    //Memanggil dari .env.local
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+    if (!uploadPreset || !cloudName) {
+      throw new Error("Konfigurasi Cloudinary belum diatur di file .env.local");
+    }
+
+    formData.append('upload_preset', uploadPreset); 
+    formData.append('cloud_name', cloudName); 
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
     });
+
+    if (!response.ok) throw new Error("Gagal mengunggah gambar ke Cloudinary.");
+    const data = await response.json();
+    return data.secure_url; 
   };
 
   //Fitur Menyimpan Data
@@ -180,13 +195,37 @@ export default function StoryEditor() {
   const currentChapter = story.chapters.find(c => c.id === activeChapterId);
   const currentPage = currentChapter?.pages.find(p => p.id === activePageId);
 
+  //HANDLER CLOUDINARY
   const handleStoryMediaUpload = async (e: ChangeEvent<HTMLInputElement>, field: 'coverImage' | 'certificateImage') => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast.error("Ukuran maksimal 2MB."); e.target.value = ""; return; }
-    const base64Image = await convertToBase64(file);
-    setStory(prev => ({ ...prev, [field]: base64Image }));
-    toast.success(`${field === 'coverImage' ? 'Cover' : 'Sertifikat'} diunggah!`);
+    
+    const uploadPromise = uploadToCloudinary(file).then((imageUrl) => {
+      setStory(prev => ({ ...prev, [field]: imageUrl }));
+    });
+
+    toast.promise(uploadPromise, {
+      loading: `Mengunggah ${field === 'coverImage' ? 'Cover' : 'Sertifikat'} ke server...`,
+      success: `${field === 'coverImage' ? 'Cover' : 'Sertifikat'} berhasil diunggah!`,
+      error: "Gagal mengunggah gambar."
+    });
+  };
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB."); e.target.value = ""; return; }
+    
+    const uploadPromise = uploadToCloudinary(file).then((imageUrl) => {
+      updatePage('image', imageUrl); 
+    });
+
+    toast.promise(uploadPromise, {
+      loading: 'Mengunggah gambar ilustrasi ke server...',
+      success: 'Gambar berhasil diunggah!',
+      error: "Gagal mengunggah gambar."
+    });
   };
 
   const handleRemoveStoryMedia = (field: 'coverImage' | 'certificateImage') => {
@@ -271,15 +310,6 @@ export default function StoryEditor() {
     setStory(prev => ({
         ...prev, chapters: prev.chapters.map(c => c.id === activeChapterId ? { ...c, pages: c.pages.map(p => p.id === activePageId ? { ...p, [field]: val } : p) } : c)
     }));
-  };
-
-  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB."); e.target.value = ""; return; }
-    const base64Image = await convertToBase64(file);
-    updatePage('image', base64Image); 
-    toast.success("Gambar halaman diunggah!");
   };
 
   const updateQuizOption = (optIdx: number, field: 'text' | 'feedback', val: string) => {
