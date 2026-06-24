@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { 
   Plus, Save, Trash2, FileText, CheckSquare, Layers, 
   ChevronRight, X, Globe, Lock, Layout, List, Edit3, 
-  Image as ImageIcon, UploadCloud, Award, ExternalLink, Loader2
+  Image as ImageIcon, UploadCloud, Award, ExternalLink, Loader2, Copy
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -292,6 +292,38 @@ export default function StoryEditor() {
     else setStory({ ...story, postTest: story.postTest.filter(q => q.id !== qId) });
   };
 
+  // Fungsi copy pretest-posttest
+  const handleCopyTests = (source: "pre" | "post") => {
+    const sourceList = source === "pre" ? story.preTest : story.postTest;
+    const targetName = source === "pre" ? "Post-Test" : "Pre-Test";
+    const sourceName = source === "pre" ? "Pre-Test" : "Post-Test";
+
+    if (sourceList.length === 0) {
+      toast.error(`Tidak ada soal di ${sourceName} untuk disalin.`);
+      return;
+    }
+
+    if (confirm(`Salin semua soal dari ${sourceName} ke ${targetName}? Soal akan ditambahkan ke bagian bawah daftar saat ini.`)) {
+      // Kita harus membuat ID baru yang unik untuk setiap soal dan opsi agar tidak bentrok di database
+      const copiedQuestions: TestItem[] = sourceList.map(q => ({
+        ...q,
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+        options: q.options.map(opt => ({
+          ...opt,
+          id: Date.now().toString() + Math.random().toString(36).substring(2, 9)
+        }))
+      }));
+
+      if (source === "pre") {
+        setStory({ ...story, postTest: [...story.postTest, ...copiedQuestions] });
+      } else {
+        setStory({ ...story, preTest: [...story.preTest, ...copiedQuestions] });
+      }
+      
+      toast.success(`Berhasil menyalin ${copiedQuestions.length} soal ke ${targetName}!`);
+    }
+  };
+
   const handleAddPage = (type: "story" | "quiz") => {
     if (!activeChapterId) return;
     const newPage: StoryPage = {
@@ -460,8 +492,21 @@ export default function StoryEditor() {
             <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} ${activeMode === 'settings' ? 'md:hidden' : 'md:flex'} flex-col w-full md:w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto`}>
                 {activeMode !== 'chapter' && activeMode !== 'settings' ? (
                     <div className="p-4 space-y-4">
-                        <div className={`p-4 rounded-lg border text-sm ${activeMode === 'pre-test' ? 'bg-orange-100 border-orange-200 text-orange-800' : 'bg-purple-100 border-purple-200 text-purple-800'}`}>
-                            Mode: <b>{activeMode === 'pre-test' ? 'Pre-Test' : 'Post-Test'}</b>
+                        <div className={`p-4 rounded-lg border text-sm flex justify-between items-center ${activeMode === 'pre-test' ? 'bg-orange-100 border-orange-200 text-orange-800' : 'bg-purple-100 border-purple-200 text-purple-800'}`}>
+                            <span>Mode: <b>{activeMode === 'pre-test' ? 'Pre-Test' : 'Post-Test'}</b></span>
+                            <Button 
+                                onClick={() => handleCopyTests(activeMode === 'pre-test' ? 'post' : 'pre')}
+                                variant="outline" 
+                                size="sm"
+                                className={`h-8 text-xs font-bold transition-colors ${
+                                    activeMode === 'pre-test' 
+                                    ? 'bg-orange-50 hover:bg-orange-200 text-orange-700 border-orange-300' 
+                                    : 'bg-purple-50 hover:bg-purple-200 text-purple-700 border-purple-300'
+                                }`}
+                            >
+                                <Copy className="w-3 h-3 mr-1.5" />
+                                Salin dari {activeMode === 'pre-test' ? 'Post-Test' : 'Pre-Test'}
+                            </Button>
                         </div>
                         {(activeMode === 'pre-test' ? story.preTest : story.postTest).map((q, idx) => (
                             <div key={q.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative group">
