@@ -21,9 +21,9 @@ export default function Achievements() {
     },
     {
       icon: Zap,
-      title: "Air Pollution Warrior",
-      description: "Selesaikan 1 cerita bertopik polusi udara",
-      unlocked: true,
+      title: "Story Collector",
+      description: "Selesaikan 3 cerita",
+      unlocked: false,
     },
     {
       icon: Award,
