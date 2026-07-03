@@ -34,11 +34,11 @@ export default function Achievements() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
 
       {/* Main Content */}
-      <main className="md:ml-64 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-64 pb-24 md:pb-8">
         
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 md:p-10 shadow-sm">
