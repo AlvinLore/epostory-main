@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Lightbulb, BookOpen, AlertCircle, FileText } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Lightbulb, BookOpen, AlertCircle, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CldImage } from "next-cloudinary";
+import { useAuth } from "@/context/AuthContext";
 
-// DEFINISI TIPE DATA
+//DEFINISI TIPE DATA
 interface StoryPage {
   type: "story" | "quiz";
   title: string;
   content: string; 
-  image?: string | null; // Tambahan field image
+  image?: string | null; 
   quizOptions?: { text: string; feedback: string }[];
   quizAns?: number;
 }
@@ -22,185 +24,213 @@ interface Chapter {
   pages: StoryPage[];
 }
 
-// DATA DUMMY
-const STORY_DATA = {
-  id: "story-1",
-  title: "Petualangan Udara Bersih",
-  // PRE-TEST
-  preTest: [
-    { 
-      id: "pre1", 
-      q: "Apa singkatan dari ISPU?",
-      options: ["Indeks Standar Pencemar Udara", "Ikatan Sarjana Pencinta Udara", "Instalasi Saluran Pipa Udara", "Indikator Standar Polusi Udara", "Indeks Status Pencemaran Udara"], 
-      ans: 0 
-    },
-    { 
-      id: "pre2", 
-      q: "Manakah yang BUKAN sumber polusi udara?",
-      options: ["Asap Kendaraan", "Pembakaran Sampah", "Menanam Pohon", "Asap Pabrik Industri", "Debu Konstruksi Bangunan"], 
-      ans: 2 
-    }
-  ],
-  // CHAPTERS
-  chapters: [
-    {
-      id: "ch1",
-      title: "Chapter 1: Kota Kelabu",
-      pages: [
-        { 
-          type: "story", 
-          title: "Pagi yang Berkabut", 
-          content: "Pagi itu, Maya membuka jendela kamarnya. Bukan sinar matahari cerah yang menyapanya, melainkan kabut tipis berwarna kelabu yang membuat gedung-gedung tinggi di kejauhan tampak samar. 'Uhuk.. uhuk..,' Maya terbatuk kecil saat menghirup udara pagi itu.",
-          image: "/Uji coba gambar 1.png"
-        },
-        { 
-          type: "quiz", 
-          title: "Kuis Kilat: Identifikasi Masalah", 
-          content: "Menurutmu, kenapa langit Jakarta terlihat berwarna kelabu padahal tidak mendung?", 
-          quizOptions: [
-            { text: "Karena kabut air alami dari laut", feedback: "Kurang tepat. Kabut alami biasanya berwarna putih bersih dan memberikan efek sejuk, bukan kelabu." },
-            { text: "Karena tumpukan polusi asap kendaraan (Smog)", feedback: "Tepat sekali! Itu disebut Smog (Smoke + Fog), campuran asap beracun dan kabut yang berbahaya bagi paru-paru." },
-            { text: "Karena efek lensa kamera", feedback: "Salah. Ini bukan efek visual kamera, melainkan kondisi nyata tebalnya polutan di udara." },
-            { text: "Karena pantulan cahaya gedung", feedback: "Tidak tepat. Cahaya dari pantulan gedung kaca tidak akan membuat langit menjadi tertutup kabut kelabu." },
-            { text: "Karena asap dari dapur rumah warga", feedback: "Kurang tepat. Skalanya terlalu kecil. Kabut tebal ini utamanya berasal dari gas buang kendaraan massal dan industri." }
-          ],
-          quizAns: 1,
-        },
-        { 
-          type: "story", 
-          title: "Berangkat Sekolah", 
-          content: "Ibu menghampiri Maya dan memberinya masker. 'Pakai ini ya, Nak. Kualitas udara hari ini sedang tidak sehat,' kata Ibu sambil menunjukkan aplikasi ISPU di ponselnya yang berwarna merah. Maya mengangguk dan berjanji akan mencari tahu cara membuat udara kembali bersih.",
-          image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=800"
-        }
-      ]
-    } as Chapter,
-    {
-      id: "ch2",
-      title: "Chapter 2: Misi Penyelamatan",
-      pages: [
-        { 
-          type: "story", 
-          title: "Ide Cemerlang", 
-          content: "Di sekolah, Maya mengajak teman-temannya untuk memulai gerakan 'Satu Anak Satu Pohon'. Mereka percaya bahwa pohon adalah filter udara alami terbaik yang bisa mereka tanam sendiri.",
-          image: "https://images.unsplash.com/photo-1584631483163-548c89fb4bc2?auto=format&fit=crop&q=80&w=800"
-        },
-        {
-           type: "quiz",
-           title: "Kuis Kilat: Solusi",
-           content: "Apa fungsi utama pohon dalam mengurangi polusi udara?",
-           quizOptions: [
-            { text: "Menyerap Karbondioksida & menghasilkan Oksigen", feedback: "Benar! Pohon bertindak sebagai filter alami kota yang menyerap gas jahat dan memberikan kita udara segar." },
-            { text: "Membuat jalanan menjadi macet", feedback: "Tentu saja salah. Pohon ditanam di trotoar atau taman, bukan di tengah jalan." },
-            { text: "Menarik petir saat hujan", feedback: "Kurang tepat. Meski pohon tinggi bisa tersambar petir, fungsi utamanya dalam konteks polusi adalah memfilter udara." },
-            { text: "Menghasilkan gas beracun", feedback: "Terbalik! Pohon justru menyerap gas beracun dan memproduksi oksigen bersih." },
-            { text: "Memantulkan radiasi matahari", feedback: "Kurang tepat. Pohon menyerap cahaya matahari untuk melakukan fotosintesis, bukan memantulkannya." }
-           ],
-           quizAns: 0,
-        },
-        {
-          type: "story",
-          title: "Akhir Petualangan",
-          content: "Berkat usaha Maya dan teman-temannya, sekolah mereka menjadi lebih hijau. Udara di sekitar sekolah terasa lebih sejuk. Maya tersenyum, langkah kecil ini adalah awal dari perubahan besar untuk Jakarta.",
-          image: "https://images.unsplash.com/photo-1584631483163-548c89fb4bc2?auto=format&fit=crop&q=80&w=800"
-        }
-      ]
-    } as Chapter
-  ],
-  // POST-TEST
-  postTest: [
-    { 
-      id: "post1", 
-      q: "Tindakan apa yang paling tepat dilakukan saat kualitas udara buruk?",
-      options: ["Berolahraga lari di jalan raya", "Menggunakan masker saat keluar rumah", "Membakar sampah daun kering", "Membuka seluruh jendela rumah lebar-lebar", "Tidak melakukan apa-apa"], 
-      ans: 1 
-    },
-    { 
-      id: "post2", 
-      q: "Apa nama partikel debu halus yang berbahaya bagi paru-paru?",
-      options: ["PM2.5", "H2O", "CO2", "Oksigen", "Karbondioksida"], 
-      ans: 0 
-    }
-  ]
-};
-
 type GlobalPhase = "pre-test" | "chapter" | "post-test" | "completed";
 
 export default function SmartStoryPlayer() {
   const router = useRouter();
+  const params = useParams();
+  const { user } = useAuth();
+  const userId = user?.id || "";
 
-  // STATE
-  const [phase, setPhase] = useState<GlobalPhase>(
-    STORY_DATA.preTest.length > 0 ? "pre-test" : "chapter"
-  );
-  
+  //STATE DATA DARI DATABASE
+  const [storyData, setStoryData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  //STATE ALUR
+  const [phase, setPhase] = useState<GlobalPhase>("chapter");
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  // State Test
+  //State Test
   const [testIndex, setTestIndex] = useState(0);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState({ pre: 0, post: 0 });
 
-  // State Inline Kuis
+  //State Inline Kuis
   const [inlineQuizSelection, setInlineQuizSelection] = useState<number | null>(null);
   const [inlineQuizFeedback, setInlineQuizFeedback] = useState<"correct" | "incorrect" | null>(null);
   
-  // Track Kuis Selesai (Completed)
+  //Track Kuis Selesai (Completed) - Anti Cheat
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
 
-  // Reset state lokal saat pindah halaman baru
+  //MENARIK DATA & CEK MEMORI LOCALSTORAGE
+  useEffect(() => {
+    const fetchStory = async () => {
+      try {
+        const res = await fetch(`/api/stories/${params.id}`);
+        const result = await res.json();
+
+        if (result.success && result.data.status === 'published') {
+          const dbData = result.data;
+          
+          //Mapping data database ke format yang dibutuhkan UI Anda
+          const formattedData = {
+            id: dbData.id,
+            title: dbData.title,
+            preTest: dbData.test_items.filter((a: any) => a.type === 'PRE_TEST').map((a: any) => ({
+              id: a.id, q: a.question,
+              options: a.test_options.map((o: any) => o.text), 
+              ans: a.test_options.findIndex((o: any) => o.is_correct)
+            })),
+            chapters: dbData.chapters.map((c: any) => ({
+              id: c.id, title: c.title,
+              pages: c.pages.map((p: any) => ({
+                type: p.type, title: p.title, content: p.content, image: p.image,
+                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ text: qo.text, feedback: qo.feedback })) : undefined,
+                quizAns: p.type === 'quiz' ? p.page_quiz_options.findIndex((qo: any) => qo.is_correct) : undefined
+              }))
+            })),
+            postTest: dbData.test_items.filter((a: any) => a.type === 'POST_TEST').map((a: any) => ({
+              id: a.id, q: a.question,
+              options: a.test_options.map((o: any) => o.text), 
+              ans: a.test_options.findIndex((o: any) => o.is_correct)
+            }))
+          };
+
+          setStoryData(formattedData);
+
+          //Cek memori dari LocalStorage untuk fitur Resume (Lanjutkan)
+          const savedMemory = localStorage.getItem(`epostory_progress_${params.id}`);
+          if (savedMemory) {
+             const memory = JSON.parse(savedMemory);
+             setPhase(memory.phase);
+             setCurrentChapterIndex(memory.chapterIndex);
+             setCurrentPageIndex(memory.pageIndex);
+             setScores(memory.scores);
+             setCompletedQuizzes(new Set(memory.completedQuizzes));
+             
+             //Restore Test Index jika ada
+             if (memory.testAnswers && memory.phase.includes('test')) {
+                 setTestAnswers(memory.testAnswers);
+                 setTestIndex(Object.keys(memory.testAnswers).length);
+             }
+             
+             if (memory.chapterIndex > 0 || memory.pageIndex > 0 || memory.phase !== 'pre-test') {
+                 toast.success("Melanjutkan cerita dari posisi terakhir...");
+             }
+          } else {
+             setPhase(formattedData.preTest.length > 0 ? "pre-test" : "chapter");
+          }
+
+        } else {
+          toast.error("Cerita belum diterbitkan atau tidak ditemukan.");
+          router.push('/dashboard');
+        }
+      } catch (error) {
+        toast.error("Gagal memuat cerita");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (params.id) fetchStory();
+  }, [params.id, router]);
+
+  //FUNGSI MENYIMPAN KE LOCALSTORAGE (DIPANGGIL SETIAP PINDAH HALAMAN)
+  const saveProgressToLocal = (newPhase: GlobalPhase, newCh: number, newPg: number, newScores: any, newCompleted: Set<string>, newTestAnswers?: any) => {
+    localStorage.setItem(`epostory_progress_${params.id}`, JSON.stringify({
+      phase: newPhase,
+      chapterIndex: newCh,
+      pageIndex: newPg,
+      scores: newScores,
+      completedQuizzes: Array.from(newCompleted), //Set tidak bisa di-JSON-kan langsung
+      testAnswers: newTestAnswers || testAnswers
+    }));
+  };
+
+  //Reset state lokal saat pindah halaman baru (kecuali jika kuis sudah selesai)
   useEffect(() => {
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
     if (!completedQuizzes.has(quizId)) {
         setInlineQuizSelection(null);
         setInlineQuizFeedback(null);
+    } else if (storyData && storyData.chapters[currentChapterIndex].pages[currentPageIndex].type === 'quiz') {
+        // Jika kembali ke halaman kuis yang sudah dijawab, set UI agar terkunci dan tampilkan kunci jawaban
+        const correctAns = storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns;
+        setInlineQuizSelection(correctAns);
+        setInlineQuizFeedback("correct"); // Paksa tampil benar sebagai memori
     }
-  }, [currentChapterIndex, currentPageIndex, completedQuizzes]);
+  }, [currentChapterIndex, currentPageIndex, completedQuizzes, storyData]);
 
-  const currentChapter = STORY_DATA.chapters[currentChapterIndex];
-  const currentPage = currentChapter?.pages[currentPageIndex];
-
-  // LOGIC HANDLERS
-  const handleTestSubmit = (type: "pre" | "post") => {
-    const questions = type === "pre" ? STORY_DATA.preTest : STORY_DATA.postTest;
+  //LOGIC HANDLERS UNTUK TES PRE/POST
+  const handleTestSubmit = async (type: "pre" | "post") => {
+    const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     let score = 0;
-    questions.forEach((q, idx) => {
+    questions.forEach((q: any, idx: number) => {
       if (testAnswers[idx] === q.ans) score += 1;
     });
 
-    setScores(prev => ({ ...prev, [type]: score }));
+    const newScores = { ...scores, [type]: score };
+    setScores(newScores);
     toast.success(`${type === 'pre' ? 'Pre-Test' : 'Post-Test'} Selesai! Skor: ${score}`);
 
     setTestAnswers({});
     setTestIndex(0);
 
-    if (type === "pre") {
-      setPhase("chapter");
-    } else {
-      setPhase("completed");
+    let nextPhase: GlobalPhase = type === "pre" ? "chapter" : "completed";
+    setPhase(nextPhase);
+    
+    saveProgressToLocal(nextPhase, currentChapterIndex, currentPageIndex, newScores, completedQuizzes, {});
+
+    //BACA DATABASE: Jika Post-Test selesai, simpan ke MySQL dan berikan Badge
+    if (type === "post" && userId) {
+      try {
+        const res = await fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, storyId: params.id, progressPercentage: 100, isCompleted: true })
+        });
+        const result = await res.json();
+        
+        if (result.newBadge) {
+          toast.success(
+            <div className="flex flex-col items-center gap-2">
+               <Trophy className="w-10 h-10 text-yellow-500" />
+               <p className="font-bold">Lencana Terbuka!</p>
+               <p className="text-sm">{result.newBadge}</p>
+            </div>, 
+            { duration: 5000 }
+          );
+        }
+        //Hapus memori lokal jika sudah tamat
+        localStorage.removeItem(`epostory_progress_${params.id}`);
+      } catch (error) {
+        console.error("Gagal sinkron progress");
+      }
     }
+  };
+
+  const handleTestNext = (type: "pre" | "post") => {
+     const newAnswers = {...testAnswers, [testIndex]: testAnswers[testIndex]};
+     setTestIndex(prev => prev + 1);
+     saveProgressToLocal(phase, currentChapterIndex, currentPageIndex, scores, completedQuizzes, newAnswers);
   };
 
   const handleInlineQuizSelect = (idx: number) => {
     if (inlineQuizFeedback) return; 
     setInlineQuizSelection(idx);
     
-    // Mark completed
+    //Mark completed (Anti Cheat)
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    setCompletedQuizzes(prev => new Set(prev).add(quizId));
+    const newCompleted = new Set(completedQuizzes).add(quizId);
+    setCompletedQuizzes(newCompleted);
     
-    if (idx === currentPage.quizAns) {
+    //Auto Save
+    saveProgressToLocal(phase, currentChapterIndex, currentPageIndex, scores, newCompleted);
+    
+    if (idx === storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns) {
       setInlineQuizFeedback("correct");
     } else {
       setInlineQuizFeedback("incorrect");
     }
   };
 
-  // Logika "lewati kuis yang sudah selesai" di Next Page
+  //Logika "lewati kuis yang sudah selesai" di Next Page
   const handleNextPage = () => {
+    const currentPage = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
     
-    // Blokir jika kuis belum dijawab DAN belum ada di daftar completed
+    //Blokir jika kuis belum dijawab DAN belum ada di daftar completed
     if (currentPage.type === 'quiz' && !completedQuizzes.has(quizId)) {
       toast.warning("Silakan jawab kuis terlebih dahulu!");
       return;
@@ -208,101 +238,115 @@ export default function SmartStoryPlayer() {
 
     let nextCh = currentChapterIndex;
     let nextPg = currentPageIndex + 1;
-    let foundValidPage = false;
     let isFinished = false;
 
-    // Loop untuk mencari halaman valid berikutnya (melewati kuis yang sudah selesai)
-    while (!foundValidPage) {
-        const chapter = STORY_DATA.chapters[nextCh];
-        if (!chapter) {
-            isFinished = true;
-            break;
-        }
-        if (nextPg >= chapter.pages.length) {
-            nextCh++;
-            nextPg = 0;
-            continue; 
-        }
-
-        const targetPage = STORY_DATA.chapters[nextCh].pages[nextPg];
-        const targetId = `${nextCh}-${nextPg}`;
-
-        // SKIP jika tipe quiz DAN sudah selesai
-        if (targetPage.type === 'quiz' && completedQuizzes.has(targetId)) {
-            nextPg++; 
-        } else {
-            foundValidPage = true;
-        }
+    //Cek apakah ini halaman terakhir dari seluruh cerita
+    if (nextCh >= storyData.chapters.length - 1 && nextPg >= storyData.chapters[nextCh].pages.length) {
+        isFinished = true;
+    } else if (nextPg >= storyData.chapters[nextCh].pages.length) {
+        //Pindah chapter
+        nextCh++;
+        nextPg = 0;
     }
 
     if (isFinished) {
         toast.info("Semua Chapter Selesai! Melanjutkan ke Post-Test...");
-        if (STORY_DATA.postTest.length > 0) {
-            setTimeout(() => setPhase("post-test"), 1500); 
-        } else {
-            setPhase("completed");
-        }
+        let nextPhase: GlobalPhase = storyData.postTest.length > 0 ? "post-test" : "completed";
+        
+        setTimeout(() => {
+            setPhase(nextPhase);
+            saveProgressToLocal(nextPhase, currentChapterIndex, currentPageIndex, scores, completedQuizzes);
+            
+            //Jika tamat tanpa post-test, trigger badge disini
+            if (nextPhase === "completed" && userId) {
+                 fetch('/api/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, storyId: params.id, progressPercentage: 100, isCompleted: true })
+                 });
+                 localStorage.removeItem(`epostory_progress_${params.id}`);
+            }
+        }, 1500); 
     } else {
         if (nextCh !== currentChapterIndex) {
             toast.info("Chapter Selesai! Masuk ke Chapter berikutnya...");
             setTimeout(() => {
                 setCurrentChapterIndex(nextCh);
                 setCurrentPageIndex(nextPg);
+                saveProgressToLocal(phase, nextCh, nextPg, scores, completedQuizzes);
+                
+                //Simpan progress persentase ke database setiap ganti chapter
+                if (userId) {
+                    const percentage = Math.round(((nextCh + 1) / storyData.chapters.length) * 100);
+                    fetch('/api/progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, storyId: params.id, progressPercentage: percentage, isCompleted: false })
+                    });
+                }
             }, 1000);
         } else {
             setCurrentChapterIndex(nextCh);
             setCurrentPageIndex(nextPg);
+            saveProgressToLocal(phase, nextCh, nextPg, scores, completedQuizzes);
         }
     }
   };
 
-  // Navigasi kembali untuk skip kuis
+  //Navigasi kembali (Bisa melihat kuis lama yang sudah dikerjakan, tetapi tombolnya dikunci)
   const handlePrevPage = () => {
     let prevCh = currentChapterIndex;
     let prevPg = currentPageIndex - 1;
-    let foundValidPage = false;
 
-    while (!foundValidPage) {
-        if (prevPg < 0) {
-            prevCh--;
-            if (prevCh < 0) return; 
-            prevPg = STORY_DATA.chapters[prevCh].pages.length - 1;
-        }
-        const targetPage = STORY_DATA.chapters[prevCh].pages[prevPg];
-        // Selalu skip kuis saat mundur
-        if (targetPage.type === 'quiz') {
-            prevPg--; 
-        } else {
-            foundValidPage = true;
-        }
+    if (prevPg < 0) {
+        prevCh--;
+        if (prevCh < 0) return; 
+        prevPg = storyData.chapters[prevCh].pages.length - 1;
     }
 
     setCurrentChapterIndex(prevCh);
     setCurrentPageIndex(prevPg);
+    saveProgressToLocal(phase, prevCh, prevPg, scores, completedQuizzes);
   };
 
   const canGoBack = () => {
-    if (currentPage.type === 'quiz') return false; 
+    if (!storyData) return false;
     if (currentChapterIndex === 0 && currentPageIndex === 0) return false; 
     return true;
   };
 
-  // Hitung Progress untuk Header
+  //Hitung Progress untuk Header
   const calculateProgress = () => {
-    // Estimasi progress sederhana berdasarkan posisi halaman dalam chapter
+    const currentChapter = storyData.chapters[currentChapterIndex];
     const totalPages = currentChapter?.pages.length || 1;
     return ((currentPageIndex + 1) / totalPages) * 100;
   };
 
-  // RENDERERS 
+  //LOADING SCREEN
+  if (isLoading || !storyData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 className="w-12 h-12 animate-spin text-green-600 mb-4" />
+        <p className="text-gray-500 font-medium font-serif">Mempersiapkan buku cerita...</p>
+      </div>
+    );
+  }
+
+  const currentChapter = storyData.chapters[currentChapterIndex];
+  const currentPage = currentChapter?.pages[currentPageIndex];
+
+  //RENDERERS 
   const renderTest = (type: "pre" | "post") => {
-    const questions = type === "pre" ? STORY_DATA.preTest : STORY_DATA.postTest;
+    const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     const currentQ = questions[testIndex];
     const isLast = testIndex === questions.length - 1;
+    
+    //Anti-cheat Pre/Post Test (Mencegah tombol back browser merusak ujian)
+    const hasAnswered = testAnswers[testIndex] !== undefined;
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-100 p-8 animate-in fade-in zoom-in duration-300">
             <div className="mb-6 flex justify-between items-center border-b pb-4">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 {type === 'pre' ? <CheckCircle2 className="text-orange-500"/> : <FileText className="text-purple-500"/>}
@@ -314,14 +358,17 @@ export default function SmartStoryPlayer() {
             <h3 className="text-xl font-medium mb-6 text-gray-800">{currentQ.q}</h3>
             
             <div className="space-y-3 mb-8">
-            {currentQ.options.map((opt, idx) => (
+            {currentQ.options.map((opt: string, idx: number) => (
                 <button
                 key={idx}
+                disabled={hasAnswered} // Anti-Cheat: Kunci pilihan jika sudah dijawab
                 onClick={() => setTestAnswers({...testAnswers, [testIndex]: idx})}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                     testAnswers[testIndex] === idx 
                     ? "border-green-500 bg-green-50 text-green-700 font-bold" 
-                    : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+                    : hasAnswered 
+                      ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" // Mode terkunci
+                      : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 >
                 {opt}
@@ -331,8 +378,8 @@ export default function SmartStoryPlayer() {
 
             <Button 
             className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg"
-            disabled={testAnswers[testIndex] === undefined}
-            onClick={() => isLast ? handleTestSubmit(type) : setTestIndex(prev => prev + 1)}
+            disabled={!hasAnswered}
+            onClick={() => isLast ? handleTestSubmit(type) : handleTestNext(type)}
             >
             {isLast ? "Selesaikan Tes" : "Selanjutnya"}
             </Button>
@@ -343,6 +390,8 @@ export default function SmartStoryPlayer() {
 
   const renderChapterContent = () => {
     const isQuizPage = currentPage.type === 'quiz';
+    const quizId = `${currentChapterIndex}-${currentPageIndex}`;
+    const isLocked = completedQuizzes.has(quizId); //Status Anti-Cheat
 
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col h-screen overflow-hidden">
@@ -372,22 +421,23 @@ export default function SmartStoryPlayer() {
         {/* MAIN CONTENT SPLIT */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             
-            {/* AREA KIRI: VISUAL (Responsif: Atas di Mobile, Kiri di Desktop) */}
+            {/* AREA KIRI: VISUAL */}
             <div className={`flex-1 flex items-center justify-center p-6 relative overflow-hidden ${isQuizPage ? 'bg-indigo-50' : 'bg-gray-100'}`}>
                 {/* Background Decoration */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                 
-                <div className="text-center z-10 animate-in zoom-in duration-500 w-full flex flex-col items-center">
+                <div key={currentPageIndex} className="text-center z-10 animate-in zoom-in duration-500 w-full flex flex-col items-center">
                     <div className="mb-6 filter drop-shadow-xl flex justify-center w-full">
                         {isQuizPage ? (
                             <div className="bg-white p-6 rounded-full shadow-lg">
                                 <AlertCircle className="w-16 h-16 md:w-24 md:h-24 text-indigo-500 animate-pulse" />
                             </div>
                         ) : currentPage.image ? (
-                            // KONTROL UKURAN GAMBAR 1:1
-                            // Maksimalnya sekitar 448x448 pixel
+                            // KONTROL UKURAN GAMBAR 1:1 DENGAN CLOUDINARY
                             <div className="relative h-[40vh] w-auto md:h-auto md:w-[70%] max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
-                                <img 
+                                <CldImage 
+                                    width={800}
+                                    height={800}
                                     src={currentPage.image} 
                                     alt={currentPage.title} 
                                     className="w-full h-full object-cover" 
@@ -405,8 +455,7 @@ export default function SmartStoryPlayer() {
                 </div>
             </div>
 
-            {/* AREA KANAN: KONTEN (Responsif: Bawah di Mobile) */}
-            {/* Menggunakan kondisi: jika kuis h-[75vh], jika cerita biasa h-[50vh] */}
+            {/* AREA KANAN: KONTEN */}
             <div className={`${isQuizPage ? 'h-[75vh]' : 'h-[50vh]'} md:h-auto md:w-[500px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300`}>
             
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
@@ -418,7 +467,7 @@ export default function SmartStoryPlayer() {
                         </span>
                     </div>
 
-                    <div className="animate-in slide-in-from-right-4 fade-in duration-300">
+                    <div key={currentPageIndex} className="animate-in slide-in-from-right-4 fade-in duration-300">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 font-serif">{currentPage.title}</h2>
                         
                         {/* Tampilan Cerita */}
@@ -433,19 +482,29 @@ export default function SmartStoryPlayer() {
                             <div className="space-y-3 mt-4">
                                 <p className="text-gray-800 font-medium text-lg mb-4">{currentPage.content}</p>
                                 
-                                {currentPage.quizOptions.map((opt, idx) => {
+                                {/* Label Jika Sudah Terjawab (Mundur) */}
+                                {isLocked && (
+                                   <div className="text-xs font-bold text-green-600 bg-green-50 p-2 rounded mb-3 flex items-center gap-2">
+                                       <CheckCircle2 className="w-4 h-4"/> Kuis ini sudah Anda selesaikan.
+                                   </div>
+                                )}
+
+                                {currentPage.quizOptions.map((opt: any, idx: number) => {
                                     let btnClass = "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50";
+                                    
                                     if (inlineQuizSelection === idx) {
                                         if (inlineQuizFeedback === 'correct') btnClass = "border-green-500 bg-green-50 text-green-700 font-bold";
                                         else if (inlineQuizFeedback === 'incorrect') btnClass = "border-red-500 bg-red-50 text-red-700 font-bold";
                                         else btnClass = "border-indigo-500 bg-indigo-50 text-indigo-700";
+                                    } else if (isLocked) {
+                                        btnClass = "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed";
                                     }
 
                                     return (
                                         <button
                                             key={idx}
                                             onClick={() => handleInlineQuizSelect(idx)}
-                                            disabled={inlineQuizFeedback !== null}
+                                            disabled={inlineQuizFeedback !== null || isLocked} // Kunci Anti-Cheat
                                             className={`w-full p-4 rounded-xl border-2 text-left text-sm md:text-base transition-all duration-200 flex justify-between items-center ${btnClass}`}
                                         >
                                             {opt.text}
@@ -474,7 +533,6 @@ export default function SmartStoryPlayer() {
                                                     {inlineQuizFeedback === 'correct' ? "Jawaban Benar!" : "Kurang Tepat"}
                                                 </p>
                                                 <p className="leading-relaxed opacity-90">
-                                                    {/* MEMANGGIL FEEDBACK SPESIFIK DARI OPSI YANG DIPILIH (INDEX) */}
                                                     {currentPage.quizOptions[inlineQuizSelection].feedback}
                                                 </p>
                                             </div>
@@ -502,18 +560,18 @@ export default function SmartStoryPlayer() {
                     {/* Tombol Next */}
                     <Button
                         onClick={handleNextPage}
-                        disabled={isQuizPage && inlineQuizSelection === null} 
+                        disabled={isQuizPage && inlineQuizSelection === null && !isLocked} 
                         className={`flex-1 shadow-md text-white transition-all h-12 text-base ${
-                            isQuizPage
+                            isQuizPage && !isLocked
                             ? 'bg-indigo-600 hover:bg-indigo-700' 
                             : 'bg-green-600 hover:bg-emerald-700'
                         }`}
                     >
-                        {currentPageIndex === currentChapter.pages.length - 1 && currentChapterIndex === STORY_DATA.chapters.length - 1 ? (
+                        {currentPageIndex === currentChapter.pages.length - 1 && currentChapterIndex === storyData.chapters.length - 1 ? (
                             <span className="flex items-center gap-2">Selesai <Trophy className="w-4 h-4"/></span>
                         ) : (
                             <span className="flex items-center gap-2">
-                                {isQuizPage && inlineQuizSelection === null ? "Jawab Kuis" : "Selanjutnya"} 
+                                {isQuizPage && inlineQuizSelection === null && !isLocked ? "Jawab Kuis" : "Selanjutnya"} 
                                 <ChevronRight className="w-4 h-4" />
                             </span>
                         )}
@@ -526,7 +584,7 @@ export default function SmartStoryPlayer() {
     );
   };
 
-  // MAIN RETURN
+  //MAIN RETURN
   if (phase === "completed") {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
@@ -556,6 +614,6 @@ export default function SmartStoryPlayer() {
     return renderChapterContent();
   }
 
-  // Pre/Post Test Renderer
+  //Pre/Post Test Renderer
   return renderTest(phase === 'pre-test' ? 'pre' : 'post');
 }
