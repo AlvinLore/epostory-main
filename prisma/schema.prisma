@@ -22,7 +22,7 @@ model chapters {
   story_id    String  @db.VarChar(50)
   title       String  @db.VarChar(255)
   order_index Int
-  stories     stories @relation(fields: [story_id, story_id, story_id, story_id, story_id, story_id, story_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
+  stories     stories @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "chapters_ibfk_1")
   pages       pages[]
 
   @@index([story_id], map: "story_id")
@@ -34,7 +34,7 @@ model page_quiz_options {
   text       String  @db.VarChar(255)
   feedback   String? @db.Text
   is_correct Boolean @default(false)
-  pages      pages   @relation(fields: [page_id, page_id, page_id, page_id, page_id, page_id, page_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
+  pages      pages   @relation(fields: [page_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "page_quiz_options_ibfk_1")
 
   @@index([page_id], map: "page_id")
 }
@@ -48,7 +48,7 @@ model pages {
   image             String?             @db.VarChar(255)
   order_index       Int
   page_quiz_options page_quiz_options[]
-  chapters          chapters            @relation(fields: [chapter_id, chapter_id, chapter_id, chapter_id, chapter_id, chapter_id, chapter_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
+  chapters          chapters            @relation(fields: [chapter_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pages_ibfk_1")
 
   @@index([chapter_id], map: "chapter_id")
 }
@@ -75,7 +75,7 @@ model test_items {
   type         test_items_type
   question     String          @db.Text
   created_at   DateTime?       @default(now()) @db.Timestamp(0)
-  stories      stories         @relation(fields: [story_id, story_id, story_id, story_id, story_id, story_id, story_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
+  stories      stories         @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_items_ibfk_1")
   test_options test_options[]
 
   @@index([story_id], map: "story_id")
@@ -86,7 +86,7 @@ model test_options {
   test_item_id String     @db.VarChar(50)
   text         String     @db.VarChar(255)
   is_correct   Boolean    @default(false)
-  test_items   test_items @relation(fields: [test_item_id, test_item_id, test_item_id, test_item_id, test_item_id, test_item_id, test_item_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
+  test_items   test_items @relation(fields: [test_item_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_options_ibfk_1")
 
   @@index([test_item_id], map: "test_item_id")
 }
@@ -96,8 +96,8 @@ model user_badges {
   user_id   String    @db.VarChar(50)
   badge_id  String    @db.VarChar(50)
   earned_at DateTime? @default(now()) @db.Timestamp(0)
-  users     users     @relation(fields: [user_id, user_id, user_id, user_id, user_id, user_id, user_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
-  badges    badges    @relation(fields: [badge_id, badge_id], references: [id, id], onDelete: Cascade, onUpdate: Restrict, map: "2")
+  users     users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_badges_ibfk_1")
+  badges    badges    @relation(fields: [badge_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_badges_ibfk_2")
 
   @@unique([user_id, badge_id], map: "user_id")
   @@index([badge_id], map: "badge_id")
@@ -114,8 +114,8 @@ model user_progress {
   status                user_progress_status? @default(started)
   quiz_answers          String?               @db.LongText
   last_read_at          DateTime?             @default(now()) @db.Timestamp(0)
-  users                 users                 @relation(fields: [user_id, user_id, user_id, user_id, user_id, user_id, user_id], references: [id, id, id, id, id, id, id], onDelete: Cascade, onUpdate: Restrict, map: "1")
-  stories               stories               @relation(fields: [story_id, story_id], references: [id, id], onDelete: Cascade, onUpdate: Restrict, map: "2")
+  users                 users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_1")
+  stories               stories               @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_2")
 
   @@unique([user_id, story_id], map: "user_id")
   @@index([story_id], map: "story_id")
