@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { CldImage } from "next-cloudinary";
 import { useAuth } from "@/context/AuthContext";
 
-//DEFINISI TIPE DATA
+// DEFINISI TIPE DATA
 interface StoryPage {
   type: "story" | "quiz";
   title: string;
@@ -32,38 +32,40 @@ export default function SmartStoryPlayer() {
   const { user } = useAuth();
   const userId = user?.id || "";
 
-  //STATE DATA DARI DATABASE
+  // STATE DATA DARI DATABASE
   const [storyData, setStoryData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  //STATE ALUR
+  // STATE ALUR
   const [phase, setPhase] = useState<GlobalPhase>("chapter");
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  //State Test
+  // State Test
   const [testIndex, setTestIndex] = useState(0);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState({ pre: 0, post: 0 });
 
-  //State Inline Kuis
+  // State Inline Kuis
   const [inlineQuizSelection, setInlineQuizSelection] = useState<number | null>(null);
   const [inlineQuizFeedback, setInlineQuizFeedback] = useState<"correct" | "incorrect" | null>(null);
   
-  //Track Kuis Selesai (Completed) - Anti Cheat
-  const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
+  // Track Kuis Selesai - Disimpan sebagai Record opsi yang dipilih (quizId -> index opsi)
+  const [answeredQuizzes, setAnsweredQuizzes] = useState<Record<string, number>>({});
 
-  //MENARIK DATA & CEK MEMORI LOCALSTORAGE
+  // MENARIK DATA CERITA & PROGRESS DARI DATABASE
   useEffect(() => {
-    const fetchStory = async () => {
+    const fetchStoryAndProgress = async () => {
+      if (!userId || !params.id) return; // Tunggu hingga auth user tersedia
+
       try {
+        // 1. Fetch Data Cerita
         const res = await fetch(`/api/stories/${params.id}`);
         const result = await res.json();
 
         if (result.success && result.data.status === 'published') {
           const dbData = result.data;
           
-          //Mapping data database ke format yang dibutuhkan UI Anda
           const formattedData = {
             id: dbData.id,
             title: dbData.title,
@@ -89,18 +91,22 @@ export default function SmartStoryPlayer() {
 
           setStoryData(formattedData);
 
-          //Cek memori dari LocalStorage untuk fitur Resume (Lanjutkan)
-          const savedMemory = localStorage.getItem(`epostory_progress_${params.id}`);
-          if (savedMemory) {
-             const memory = JSON.parse(savedMemory);
-             setPhase(memory.phase);
-             setCurrentChapterIndex(memory.chapterIndex);
-             setCurrentPageIndex(memory.pageIndex);
-             setScores(memory.scores);
-             setCompletedQuizzes(new Set(memory.completedQuizzes));
+          // 2. Fetch Progress User dari Database
+          const progRes = await fetch(`/api/progress?userId=${userId}&storyId=${params.id}`);
+          const progResult = await progRes.json();
+          
+          // Penyesuaian jika API mengembalikan array atau object tunggal
+          const progressData = Array.isArray(progResult.data) ? progResult.data[0] : progResult.data;
+
+          if (progressData && progressData.quiz_answers) {
+             const memory = JSON.parse(progressData.quiz_answers);
+             setPhase(memory.phase || "chapter");
+             setCurrentChapterIndex(memory.chapterIndex || 0);
+             setCurrentPageIndex(memory.pageIndex || 0);
+             setScores(memory.scores || { pre: 0, post: 0 });
+             setAnsweredQuizzes(memory.answeredQuizzes || {});
              
-             //Restore Test Index jika ada
-             if (memory.testAnswers && memory.phase.includes('test')) {
+             if (memory.testAnswers && memory.phase?.includes('test')) {
                  setTestAnswers(memory.testAnswers);
                  setTestIndex(Object.keys(memory.testAnswers).length);
              }
@@ -109,6 +115,7 @@ export default function SmartStoryPlayer() {
                  toast.success("Melanjutkan cerita dari posisi terakhir...");
              }
           } else {
+             // Mulai dari awal jika tidak ada progress di database
              setPhase(formattedData.preTest.length > 0 ? "pre-test" : "chapter");
           }
 
@@ -123,36 +130,69 @@ export default function SmartStoryPlayer() {
       }
     };
 
-    if (params.id) fetchStory();
-  }, [params.id, router]);
+    fetchStoryAndProgress();
+  }, [params.id, userId, router]);
 
-  //FUNGSI MENYIMPAN KE LOCALSTORAGE (DIPANGGIL SETIAP PINDAH HALAMAN)
-  const saveProgressToLocal = (newPhase: GlobalPhase, newCh: number, newPg: number, newScores: any, newCompleted: Set<string>, newTestAnswers?: any) => {
-    localStorage.setItem(`epostory_progress_${params.id}`, JSON.stringify({
+  // FUNGSI MENYIMPAN KE DATABASE (DIPANGGIL SETIAP PINDAH HALAMAN)
+  const saveProgressToDB = async (
+    newPhase: GlobalPhase, 
+    newCh: number, 
+    newPg: number, 
+    newScores: any, 
+    newAnswered: Record<string, number>
+  ) => {
+    if (!userId || !storyData) return null;
+
+    const memory = {
       phase: newPhase,
       chapterIndex: newCh,
       pageIndex: newPg,
-      scores: newScores,
-      completedQuizzes: Array.from(newCompleted), //Set tidak bisa di-JSON-kan langsung
-      testAnswers: newTestAnswers || testAnswers
-    }));
+      answeredQuizzes: newAnswered
+    };
+
+    const percentage = Math.round(((newCh + 1) / storyData.chapters.length) * 100);
+
+    try {
+      const res = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          storyId: params.id as string,
+          progressPercentage: newPhase === 'completed' ? 100 : percentage,
+          isCompleted: newPhase === 'completed',
+          quiz_answers: JSON.stringify(memory),
+          preTestScore: newScores.pre,
+          postTestScore: newScores.post
+        })
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Gagal menyimpan progress ke database", err);
+      return null;
+    }
   };
 
-  //Reset state lokal saat pindah halaman baru (kecuali jika kuis sudah selesai)
+  // Reset state lokal atau munculkan jawaban sebelumnya saat pindah halaman
   useEffect(() => {
+    if (!storyData || !storyData.chapters[currentChapterIndex]) return;
+    
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    if (!completedQuizzes.has(quizId)) {
+    const savedAnswerIdx = answeredQuizzes[quizId];
+    const currentPageData = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
+
+    if (currentPageData.type === 'quiz' && savedAnswerIdx !== undefined) {
+        // Kuis sudah pernah dijawab, munculkan memori jawaban
+        const correctAns = currentPageData.quizAns;
+        setInlineQuizSelection(savedAnswerIdx);
+        setInlineQuizFeedback(savedAnswerIdx === correctAns ? "correct" : "incorrect");
+    } else {
         setInlineQuizSelection(null);
         setInlineQuizFeedback(null);
-    } else if (storyData && storyData.chapters[currentChapterIndex].pages[currentPageIndex].type === 'quiz') {
-        // Jika kembali ke halaman kuis yang sudah dijawab, set UI agar terkunci dan tampilkan kunci jawaban
-        const correctAns = storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns;
-        setInlineQuizSelection(correctAns);
-        setInlineQuizFeedback("correct"); // Paksa tampil benar sebagai memori
     }
-  }, [currentChapterIndex, currentPageIndex, completedQuizzes, storyData]);
+  }, [currentChapterIndex, currentPageIndex, answeredQuizzes, storyData]);
 
-  //LOGIC HANDLERS UNTUK TES PRE/POST
+  // LOGIC HANDLERS UNTUK TES PRE/POST
   const handleTestSubmit = async (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     let score = 0;
@@ -167,71 +207,54 @@ export default function SmartStoryPlayer() {
     setTestAnswers({});
     setTestIndex(0);
 
-    let nextPhase: GlobalPhase = type === "pre" ? "chapter" : "completed";
+    const nextPhase: GlobalPhase = type === "pre" ? "chapter" : "completed";
     setPhase(nextPhase);
     
-    saveProgressToLocal(nextPhase, currentChapterIndex, currentPageIndex, newScores, completedQuizzes, {});
+    // Simpan progres ke database (Lencana akan muncul jika return JSON terdapat atribut newBadge)
+    const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, newScores, answeredQuizzes);
 
-    //BACA DATABASE: Jika Post-Test selesai, simpan ke MySQL dan berikan Badge
-    if (type === "post" && userId) {
-      try {
-        const res = await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, storyId: params.id, progressPercentage: 100, isCompleted: true })
-        });
-        const result = await res.json();
-        
-        if (result.newBadge) {
-          toast.success(
-            <div className="flex flex-col items-center gap-2">
-               <Trophy className="w-10 h-10 text-yellow-500" />
-               <p className="font-bold">Lencana Terbuka!</p>
-               <p className="text-sm">{result.newBadge}</p>
-            </div>, 
-            { duration: 5000 }
-          );
-        }
-        //Hapus memori lokal jika sudah tamat
-        localStorage.removeItem(`epostory_progress_${params.id}`);
-      } catch (error) {
-        console.error("Gagal sinkron progress");
-      }
+    if (type === "post" && result?.newBadge) {
+        toast.success(
+          <div className="flex flex-col items-center gap-2">
+             <Trophy className="w-10 h-10 text-yellow-500" />
+             <p className="font-bold">Lencana Terbuka!</p>
+             <p className="text-sm">{result.newBadge}</p>
+          </div>, 
+          { duration: 5000 }
+        );
     }
   };
 
   const handleTestNext = (type: "pre" | "post") => {
-     const newAnswers = {...testAnswers, [testIndex]: testAnswers[testIndex]};
      setTestIndex(prev => prev + 1);
-     saveProgressToLocal(phase, currentChapterIndex, currentPageIndex, scores, completedQuizzes, newAnswers);
   };
 
   const handleInlineQuizSelect = (idx: number) => {
-    if (inlineQuizFeedback) return; 
+    if (inlineQuizFeedback !== null) return; 
     setInlineQuizSelection(idx);
     
-    //Mark completed (Anti Cheat)
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    const newCompleted = new Set(completedQuizzes).add(quizId);
-    setCompletedQuizzes(newCompleted);
+    const newAnswered = { ...answeredQuizzes, [quizId]: idx };
+    setAnsweredQuizzes(newAnswered);
     
-    //Auto Save
-    saveProgressToLocal(phase, currentChapterIndex, currentPageIndex, scores, newCompleted);
+    // Auto Save saat jawaban dipilih
+    saveProgressToDB(phase, currentChapterIndex, currentPageIndex, scores, newAnswered);
     
-    if (idx === storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns) {
+    const correctAns = storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns;
+    if (idx === correctAns) {
       setInlineQuizFeedback("correct");
     } else {
       setInlineQuizFeedback("incorrect");
     }
   };
 
-  //Logika "lewati kuis yang sudah selesai" di Next Page
+  // Navigasi halaman lanjut
   const handleNextPage = () => {
     const currentPage = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
     
-    //Blokir jika kuis belum dijawab DAN belum ada di daftar completed
-    if (currentPage.type === 'quiz' && !completedQuizzes.has(quizId)) {
+    // Blokir jika kuis belum dijawab
+    if (currentPage.type === 'quiz' && answeredQuizzes[quizId] === undefined) {
       toast.warning("Silakan jawab kuis terlebih dahulu!");
       return;
     }
@@ -240,31 +263,31 @@ export default function SmartStoryPlayer() {
     let nextPg = currentPageIndex + 1;
     let isFinished = false;
 
-    //Cek apakah ini halaman terakhir dari seluruh cerita
     if (nextCh >= storyData.chapters.length - 1 && nextPg >= storyData.chapters[nextCh].pages.length) {
         isFinished = true;
     } else if (nextPg >= storyData.chapters[nextCh].pages.length) {
-        //Pindah chapter
         nextCh++;
         nextPg = 0;
     }
 
     if (isFinished) {
         toast.info("Semua Chapter Selesai! Melanjutkan ke Post-Test...");
-        let nextPhase: GlobalPhase = storyData.postTest.length > 0 ? "post-test" : "completed";
+        const nextPhase: GlobalPhase = storyData.postTest.length > 0 ? "post-test" : "completed";
         
-        setTimeout(() => {
+        setTimeout(async () => {
             setPhase(nextPhase);
-            saveProgressToLocal(nextPhase, currentChapterIndex, currentPageIndex, scores, completedQuizzes);
+            const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, scores, answeredQuizzes);
             
-            //Jika tamat tanpa post-test, trigger badge disini
-            if (nextPhase === "completed" && userId) {
-                 fetch('/api/progress', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, storyId: params.id, progressPercentage: 100, isCompleted: true })
-                 });
-                 localStorage.removeItem(`epostory_progress_${params.id}`);
+            // Beri badge jika tamat langsung tanpa post-test
+            if (nextPhase === "completed" && result?.newBadge) {
+                toast.success(
+                  <div className="flex flex-col items-center gap-2">
+                     <Trophy className="w-10 h-10 text-yellow-500" />
+                     <p className="font-bold">Lencana Terbuka!</p>
+                     <p className="text-sm">{result.newBadge}</p>
+                  </div>, 
+                  { duration: 5000 }
+                );
             }
         }, 1500); 
     } else {
@@ -273,27 +296,16 @@ export default function SmartStoryPlayer() {
             setTimeout(() => {
                 setCurrentChapterIndex(nextCh);
                 setCurrentPageIndex(nextPg);
-                saveProgressToLocal(phase, nextCh, nextPg, scores, completedQuizzes);
-                
-                //Simpan progress persentase ke database setiap ganti chapter
-                if (userId) {
-                    const percentage = Math.round(((nextCh + 1) / storyData.chapters.length) * 100);
-                    fetch('/api/progress', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, storyId: params.id, progressPercentage: percentage, isCompleted: false })
-                    });
-                }
+                saveProgressToDB(phase, nextCh, nextPg, scores, answeredQuizzes);
             }, 1000);
         } else {
             setCurrentChapterIndex(nextCh);
             setCurrentPageIndex(nextPg);
-            saveProgressToLocal(phase, nextCh, nextPg, scores, completedQuizzes);
+            saveProgressToDB(phase, nextCh, nextPg, scores, answeredQuizzes);
         }
     }
   };
 
-  //Navigasi kembali (Bisa melihat kuis lama yang sudah dikerjakan, tetapi tombolnya dikunci)
   const handlePrevPage = () => {
     let prevCh = currentChapterIndex;
     let prevPg = currentPageIndex - 1;
@@ -306,7 +318,7 @@ export default function SmartStoryPlayer() {
 
     setCurrentChapterIndex(prevCh);
     setCurrentPageIndex(prevPg);
-    saveProgressToLocal(phase, prevCh, prevPg, scores, completedQuizzes);
+    saveProgressToDB(phase, prevCh, prevPg, scores, answeredQuizzes);
   };
 
   const canGoBack = () => {
@@ -315,14 +327,13 @@ export default function SmartStoryPlayer() {
     return true;
   };
 
-  //Hitung Progress untuk Header
   const calculateProgress = () => {
     const currentChapter = storyData.chapters[currentChapterIndex];
     const totalPages = currentChapter?.pages.length || 1;
     return ((currentPageIndex + 1) / totalPages) * 100;
   };
 
-  //LOADING SCREEN
+  // LOADING SCREEN
   if (isLoading || !storyData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -335,13 +346,11 @@ export default function SmartStoryPlayer() {
   const currentChapter = storyData.chapters[currentChapterIndex];
   const currentPage = currentChapter?.pages[currentPageIndex];
 
-  //RENDERERS 
+  // RENDERERS 
   const renderTest = (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     const currentQ = questions[testIndex];
     const isLast = testIndex === questions.length - 1;
-    
-    //Anti-cheat Pre/Post Test (Mencegah tombol back browser merusak ujian)
     const hasAnswered = testAnswers[testIndex] !== undefined;
 
     return (
@@ -361,13 +370,13 @@ export default function SmartStoryPlayer() {
             {currentQ.options.map((opt: string, idx: number) => (
                 <button
                 key={idx}
-                disabled={hasAnswered} // Anti-Cheat: Kunci pilihan jika sudah dijawab
+                disabled={hasAnswered} 
                 onClick={() => setTestAnswers({...testAnswers, [testIndex]: idx})}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                     testAnswers[testIndex] === idx 
                     ? "border-green-500 bg-green-50 text-green-700 font-bold" 
                     : hasAnswered 
-                      ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" // Mode terkunci
+                      ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" 
                       : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 >
@@ -391,7 +400,7 @@ export default function SmartStoryPlayer() {
   const renderChapterContent = () => {
     const isQuizPage = currentPage.type === 'quiz';
     const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    const isLocked = completedQuizzes.has(quizId); //Status Anti-Cheat
+    const isLocked = answeredQuizzes[quizId] !== undefined;
 
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col h-screen overflow-hidden">
@@ -402,7 +411,6 @@ export default function SmartStoryPlayer() {
                 <ArrowLeft className="w-4 h-4" /> <span className="text-sm font-bold hidden md:inline">Exit</span>
             </button>
             
-            {/* Progress Bar Dinamis */}
             <div className="flex flex-col items-center w-1/2 md:w-1/3">
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div 
@@ -415,7 +423,7 @@ export default function SmartStoryPlayer() {
                 </p>
             </div>
 
-            <div className="w-10"></div> {/* Spacer */}
+            <div className="w-10"></div>
         </div>
 
         {/* MAIN CONTENT SPLIT */}
@@ -423,7 +431,6 @@ export default function SmartStoryPlayer() {
             
             {/* AREA KIRI: VISUAL */}
             <div className={`flex-1 flex items-center justify-center p-6 relative overflow-hidden ${isQuizPage ? 'bg-indigo-50' : 'bg-gray-100'}`}>
-                {/* Background Decoration */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                 
                 <div key={currentPageIndex} className="text-center z-10 animate-in zoom-in duration-500 w-full flex flex-col items-center">
@@ -433,7 +440,6 @@ export default function SmartStoryPlayer() {
                                 <AlertCircle className="w-16 h-16 md:w-24 md:h-24 text-indigo-500 animate-pulse" />
                             </div>
                         ) : currentPage.image ? (
-                            // KONTROL UKURAN GAMBAR 1:1 DENGAN CLOUDINARY
                             <div className="relative h-[40vh] w-auto md:h-auto md:w-[70%] max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80">
                                 <CldImage 
                                     width={800}
@@ -460,7 +466,6 @@ export default function SmartStoryPlayer() {
             
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
                     
-                    {/* Header Halaman */}
                     <div className="flex items-center gap-2 mb-4">
                         <span className={`px-3 py-1 rounded-md text-[10px] md:text-xs font-bold uppercase ${isQuizPage ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'}`}>
                             {isQuizPage ? 'Uji Pemahaman' : 'Cerita'}
@@ -470,19 +475,16 @@ export default function SmartStoryPlayer() {
                     <div key={currentPageIndex} className="animate-in slide-in-from-right-4 fade-in duration-300">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 font-serif">{currentPage.title}</h2>
                         
-                        {/* Tampilan Cerita */}
                         {!isQuizPage && (
                             <p className="text-gray-700 leading-8 text-base md:text-lg font-serif">
                                 {currentPage.content}
                             </p>
                         )}
 
-                        {/* Tampilan Kuis */}
                         {isQuizPage && currentPage.quizOptions && (
                             <div className="space-y-3 mt-4">
                                 <p className="text-gray-800 font-medium text-lg mb-4">{currentPage.content}</p>
                                 
-                                {/* Label Jika Sudah Terjawab (Mundur) */}
                                 {isLocked && (
                                    <div className="text-xs font-bold text-green-600 bg-green-50 p-2 rounded mb-3 flex items-center gap-2">
                                        <CheckCircle2 className="w-4 h-4"/> Kuis ini sudah Anda selesaikan.
@@ -504,7 +506,7 @@ export default function SmartStoryPlayer() {
                                         <button
                                             key={idx}
                                             onClick={() => handleInlineQuizSelect(idx)}
-                                            disabled={inlineQuizFeedback !== null || isLocked} // Kunci Anti-Cheat
+                                            disabled={inlineQuizFeedback !== null || isLocked}
                                             className={`w-full p-4 rounded-xl border-2 text-left text-sm md:text-base transition-all duration-200 flex justify-between items-center ${btnClass}`}
                                         >
                                             {opt.text}
@@ -514,7 +516,6 @@ export default function SmartStoryPlayer() {
                                     )
                                 })}
 
-                                {/* Kotak Feedback*/}
                                 {inlineQuizFeedback && inlineQuizSelection !== null && (
                                     <div className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
                                         inlineQuizFeedback === 'correct'
@@ -542,12 +543,10 @@ export default function SmartStoryPlayer() {
                             </div>
                         )}
                     </div>
-
                 </div>
 
                 {/* NAVIGASI BAWAH */}
                 <div className="p-6 border-t border-gray-100 bg-gray-50/80 backdrop-blur flex space-x-3">
-                    {/* Tombol Back */}
                     <Button
                         onClick={handlePrevPage}
                         disabled={!canGoBack()}
@@ -557,7 +556,6 @@ export default function SmartStoryPlayer() {
                         <ChevronLeft className="w-4 h-4 mr-1" /> Kembali
                     </Button>
                     
-                    {/* Tombol Next */}
                     <Button
                         onClick={handleNextPage}
                         disabled={isQuizPage && inlineQuizSelection === null && !isLocked} 
@@ -584,7 +582,7 @@ export default function SmartStoryPlayer() {
     );
   };
 
-  //MAIN RETURN
+  // MAIN RETURN
   if (phase === "completed") {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
@@ -614,6 +612,5 @@ export default function SmartStoryPlayer() {
     return renderChapterContent();
   }
 
-  //Pre/Post Test Renderer
   return renderTest(phase === 'pre-test' ? 'pre' : 'post');
 }
