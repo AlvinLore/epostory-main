@@ -61,6 +61,8 @@ export async function POST(req: Request) {
     }
 
     let updatedAnswersString = null;
+    let mergedAnswers: any = {};
+
     //Gabungkan jawaban lama dengan jawaban baru (jika ada kiriman dari frontend)
     if (quizAnswers) {
         let newAnswersParsed = {};
@@ -70,10 +72,44 @@ export async function POST(req: Request) {
             console.error("Gagal parse new quiz_answers", e);
         }
         
-        const mergedAnswers = {
+        const mergedAnswers: any = {
             ...currentAnswers,
             ...newAnswersParsed
         };
+
+        // Jika user menyelesaikan cerita, hitung validasi nilai intermezo kuis di backend
+        if (isCompleted && mergedAnswers.answeredQuizzes) {
+            // Ambil seluruh halaman kuis untuk story tersebut beserta opsi jawabannya
+            const storyPages = await prisma.pages.findMany({
+                where: { 
+                  chapters: { story_id: storyId }, 
+                  type: 'quiz' 
+                },
+                include: { page_quiz_options: true }
+            });
+
+            let correctCount = 0;
+            let totalActiveQuizzes = storyPages.length;
+
+            for (const page of storyPages) {
+                // userAnswerId sekarang berupa string ID opsi
+                const userAnswerId = mergedAnswers.answeredQuizzes[page.id];
+                
+                if (userAnswerId) {
+                    // Cari opsi mana yang benar dari database saat ini
+                    const correctOption = page.page_quiz_options.find(opt => opt.is_correct);
+                    
+                    // Cocokkan apakah ID jawaban user sama dengan ID opsi yang benar
+                    if (correctOption && userAnswerId === correctOption.id) {
+                        correctCount++;
+                    }
+                }
+            }
+            
+            mergedAnswers.calculatedIntermezzoScore = correctCount;
+            mergedAnswers.totalActiveQuizzes = totalActiveQuizzes;
+        }
+
         updatedAnswersString = JSON.stringify(mergedAnswers);
     } else {
         updatedAnswersString = existingProgress?.quiz_answers || null;

@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import { CldImage } from "next-cloudinary";
 import { useAuth } from "@/context/AuthContext";
 
-// DEFINISI TIPE DATA
+//DEFINISI TIPE DATA
 interface StoryPage {
+  id: string;
   type: "story" | "quiz";
   title: string;
   content: string; 
-  image?: string | null; 
-  quizOptions?: { text: string; feedback: string }[];
-  quizAns?: number;
+  image?: string | null;
+  quizOptions?: { id: string; text: string; feedback: string }[];
+  quizAns?: string;
 }
 
 interface Chapter {
@@ -32,34 +33,34 @@ export default function SmartStoryPlayer() {
   const { user } = useAuth();
   const userId = user?.id || "";
 
-  // STATE DATA DARI DATABASE
+  //STATE DATA DARI DATABASE
   const [storyData, setStoryData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // STATE ALUR
+  //STATE ALUR
   const [phase, setPhase] = useState<GlobalPhase>("chapter");
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  // State Test
+  //State Test
   const [testIndex, setTestIndex] = useState(0);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState({ pre: 0, post: 0 });
 
-  // State Inline Kuis
-  const [inlineQuizSelection, setInlineQuizSelection] = useState<number | null>(null);
+  //State Inline Kuis
+  const [inlineQuizSelection, setInlineQuizSelection] = useState<string | null>(null);
   const [inlineQuizFeedback, setInlineQuizFeedback] = useState<"correct" | "incorrect" | null>(null);
   
-  // Track Kuis Selesai - Disimpan sebagai Record opsi yang dipilih (quizId -> index opsi)
-  const [answeredQuizzes, setAnsweredQuizzes] = useState<Record<string, number>>({});
+  //Track Kuis Selesai - Disimpan sebagai Record opsi yang dipilih
+  const [answeredQuizzes, setAnsweredQuizzes] = useState<Record<string, string>>({});
 
-  // MENARIK DATA CERITA & PROGRESS DARI DATABASE
+  //MENARIK DATA CERITA & PROGRESS DARI DATABASE
   useEffect(() => {
     const fetchStoryAndProgress = async () => {
       if (!userId || !params.id) return; // Tunggu hingga auth user tersedia
 
       try {
-        // 1. Fetch Data Cerita
+        //1. Fetch Data Cerita
         const res = await fetch(`/api/stories/${params.id}`);
         const result = await res.json();
 
@@ -77,9 +78,17 @@ export default function SmartStoryPlayer() {
             chapters: dbData.chapters.map((c: any) => ({
               id: c.id, title: c.title,
               pages: c.pages.map((p: any) => ({
-                type: p.type, title: p.title, content: p.content, image: p.image,
-                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ text: qo.text, feedback: qo.feedback })) : undefined,
-                quizAns: p.type === 'quiz' ? p.page_quiz_options.findIndex((qo: any) => qo.is_correct) : undefined
+                id: p.id,
+                type: p.type,
+                title: p.title,
+                content: p.content,
+                image: p.image,
+                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ 
+                    id: qo.id, //Ambil ID opsi dari database
+                    text: qo.text,
+                    feedback: qo.feedback 
+                })) : undefined,
+                quizAns: p.type === 'quiz' ? p.page_quiz_options.find((qo: any) => qo.is_correct)?.id : undefined
               }))
             })),
             postTest: dbData.test_items.filter((a: any) => a.type === 'POST_TEST').map((a: any) => ({
@@ -91,11 +100,11 @@ export default function SmartStoryPlayer() {
 
           setStoryData(formattedData);
 
-          // 2. Fetch Progress User dari Database
+          //2. Fetch Progress User dari Database
           const progRes = await fetch(`/api/progress?userId=${userId}&storyId=${params.id}`);
           const progResult = await progRes.json();
           
-          // Penyesuaian jika API mengembalikan array atau object tunggal
+          //Penyesuaian jika API mengembalikan array atau object tunggal
           const progressData = Array.isArray(progResult.data) ? progResult.data[0] : progResult.data;
 
           if (progressData && progressData.quiz_answers) {
@@ -115,7 +124,7 @@ export default function SmartStoryPlayer() {
                  toast.success("Melanjutkan cerita dari posisi terakhir...");
              }
           } else {
-             // Mulai dari awal jika tidak ada progress di database
+             //Mulai dari awal jika tidak ada progress di database
              setPhase(formattedData.preTest.length > 0 ? "pre-test" : "chapter");
           }
 
@@ -133,13 +142,13 @@ export default function SmartStoryPlayer() {
     fetchStoryAndProgress();
   }, [params.id, userId, router]);
 
-  // FUNGSI MENYIMPAN KE DATABASE (DIPANGGIL SETIAP PINDAH HALAMAN)
+  //FUNGSI MENYIMPAN KE DATABASE (DIPANGGIL SETIAP PINDAH HALAMAN)
   const saveProgressToDB = async (
     newPhase: GlobalPhase, 
     newCh: number, 
     newPg: number, 
     newScores: any, 
-    newAnswered: Record<string, number>
+    newAnswered: Record<string, string>
   ) => {
     if (!userId || !storyData) return null;
 
@@ -173,16 +182,16 @@ export default function SmartStoryPlayer() {
     }
   };
 
-  // Reset state lokal atau munculkan jawaban sebelumnya saat pindah halaman
+  //Reset state lokal atau munculkan jawaban sebelumnya saat pindah halaman
   useEffect(() => {
     if (!storyData || !storyData.chapters[currentChapterIndex]) return;
     
-    const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    const savedAnswerIdx = answeredQuizzes[quizId];
     const currentPageData = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
+    const quizId = currentPageData.id; 
+    const savedAnswerIdx = answeredQuizzes[quizId];
 
     if (currentPageData.type === 'quiz' && savedAnswerIdx !== undefined) {
-        // Kuis sudah pernah dijawab, munculkan memori jawaban
+        //Kuis sudah pernah dijawab, munculkan memori jawaban
         const correctAns = currentPageData.quizAns;
         setInlineQuizSelection(savedAnswerIdx);
         setInlineQuizFeedback(savedAnswerIdx === correctAns ? "correct" : "incorrect");
@@ -192,7 +201,7 @@ export default function SmartStoryPlayer() {
     }
   }, [currentChapterIndex, currentPageIndex, answeredQuizzes, storyData]);
 
-  // LOGIC HANDLERS UNTUK TES PRE/POST
+  //LOGIC HANDLERS UNTUK TES PRE/POST
   const handleTestSubmit = async (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     let score = 0;
@@ -210,7 +219,7 @@ export default function SmartStoryPlayer() {
     const nextPhase: GlobalPhase = type === "pre" ? "chapter" : "completed";
     setPhase(nextPhase);
     
-    // Simpan progres ke database (Lencana akan muncul jika return JSON terdapat atribut newBadge)
+    //Simpan progres ke database (Lencana akan muncul jika return JSON terdapat atribut newBadge)
     const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, newScores, answeredQuizzes);
 
     if (type === "post" && result?.newBadge) {
@@ -229,31 +238,31 @@ export default function SmartStoryPlayer() {
      setTestIndex(prev => prev + 1);
   };
 
-  const handleInlineQuizSelect = (idx: number) => {
+  const handleInlineQuizSelect = (optId: string) => {
     if (inlineQuizFeedback !== null) return; 
-    setInlineQuizSelection(idx);
+    setInlineQuizSelection(optId);
     
-    const quizId = `${currentChapterIndex}-${currentPageIndex}`;
-    const newAnswered = { ...answeredQuizzes, [quizId]: idx };
+    const currentPageData = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
+    const quizId = currentPageData.id;
+    const newAnswered = { ...answeredQuizzes, [quizId]: optId };
     setAnsweredQuizzes(newAnswered);
     
-    // Auto Save saat jawaban dipilih
     saveProgressToDB(phase, currentChapterIndex, currentPageIndex, scores, newAnswered);
     
-    const correctAns = storyData.chapters[currentChapterIndex].pages[currentPageIndex].quizAns;
-    if (idx === correctAns) {
+    const correctAns = currentPageData.quizAns;
+    if (optId === correctAns) {
       setInlineQuizFeedback("correct");
     } else {
       setInlineQuizFeedback("incorrect");
     }
   };
 
-  // Navigasi halaman lanjut
+  //Navigasi halaman lanjut
   const handleNextPage = () => {
     const currentPage = storyData.chapters[currentChapterIndex].pages[currentPageIndex];
-    const quizId = `${currentChapterIndex}-${currentPageIndex}`;
+    const quizId = currentPage.id;
     
-    // Blokir jika kuis belum dijawab
+    //Blokir jika kuis belum dijawab
     if (currentPage.type === 'quiz' && answeredQuizzes[quizId] === undefined) {
       toast.warning("Silakan jawab kuis terlebih dahulu!");
       return;
@@ -278,7 +287,7 @@ export default function SmartStoryPlayer() {
             setPhase(nextPhase);
             const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, scores, answeredQuizzes);
             
-            // Beri badge jika tamat langsung tanpa post-test
+            //Beri badge jika tamat langsung tanpa post-test
             if (nextPhase === "completed" && result?.newBadge) {
                 toast.success(
                   <div className="flex flex-col items-center gap-2">
@@ -333,7 +342,7 @@ export default function SmartStoryPlayer() {
     return ((currentPageIndex + 1) / totalPages) * 100;
   };
 
-  // LOADING SCREEN
+  //LOADING SCREEN
   if (isLoading || !storyData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -346,7 +355,7 @@ export default function SmartStoryPlayer() {
   const currentChapter = storyData.chapters[currentChapterIndex];
   const currentPage = currentChapter?.pages[currentPageIndex];
 
-  // RENDERERS 
+  //RENDERERS 
   const renderTest = (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
     const currentQ = questions[testIndex];
@@ -399,7 +408,7 @@ export default function SmartStoryPlayer() {
 
   const renderChapterContent = () => {
     const isQuizPage = currentPage.type === 'quiz';
-    const quizId = `${currentChapterIndex}-${currentPageIndex}`;
+    const quizId = currentPage.id;
     const isLocked = answeredQuizzes[quizId] !== undefined;
 
     return (
@@ -494,7 +503,7 @@ export default function SmartStoryPlayer() {
                                 {currentPage.quizOptions.map((opt: any, idx: number) => {
                                     let btnClass = "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50";
                                     
-                                    if (inlineQuizSelection === idx) {
+                                    if (inlineQuizSelection === opt.id) {
                                         if (inlineQuizFeedback === 'correct') btnClass = "border-green-500 bg-green-50 text-green-700 font-bold";
                                         else if (inlineQuizFeedback === 'incorrect') btnClass = "border-red-500 bg-red-50 text-red-700 font-bold";
                                         else btnClass = "border-indigo-500 bg-indigo-50 text-indigo-700";
@@ -504,41 +513,48 @@ export default function SmartStoryPlayer() {
 
                                     return (
                                         <button
-                                            key={idx}
-                                            onClick={() => handleInlineQuizSelect(idx)}
+                                            key={opt.id}
+                                            onClick={() => handleInlineQuizSelect(opt.id)}
                                             disabled={inlineQuizFeedback !== null || isLocked}
                                             className={`w-full p-4 rounded-xl border-2 text-left text-sm md:text-base transition-all duration-200 flex justify-between items-center ${btnClass}`}
                                         >
                                             {opt.text}
-                                            {inlineQuizSelection === idx && inlineQuizFeedback === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 ml-2"/>}
-                                            {inlineQuizSelection === idx && inlineQuizFeedback === 'incorrect' && <XCircle className="w-5 h-5 text-red-600 shrink-0 ml-2"/>}
+                                            {inlineQuizSelection === opt.id && inlineQuizFeedback === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 ml-2"/>}
+                                            {inlineQuizSelection === opt.id && inlineQuizFeedback === 'incorrect' && <XCircle className="w-5 h-5 text-red-600 shrink-0 ml-2"/>}
                                         </button>
                                     )
                                 })}
 
                                 {inlineQuizFeedback && inlineQuizSelection !== null && (
-                                    <div className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
-                                        inlineQuizFeedback === 'correct'
-                                        ? 'bg-green-50 border-green-200 text-green-900' 
-                                        : 'bg-red-50 border-red-200 text-red-900'
-                                    }`}>
-                                        <div className="flex items-start gap-3">
-                                            <div className={`p-2 rounded-full ${inlineQuizFeedback === 'correct' ? 'bg-green-100' : 'bg-red-100'}`}>
-                                                {inlineQuizFeedback === 'correct'
-                                                    ? <Trophy className="w-5 h-5 text-green-600" />
-                                                    : <Lightbulb className="w-5 h-5 text-red-600" />
-                                                }
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-base mb-1">
-                                                    {inlineQuizFeedback === 'correct' ? "Jawaban Benar!" : "Kurang Tepat"}
-                                                </p>
-                                                <p className="leading-relaxed opacity-90">
-                                                    {currentPage.quizOptions[inlineQuizSelection].feedback}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    (() => {
+                                      const selectedOpt = currentPage.quizOptions.find((o: any) => o.id === inlineQuizSelection);
+                                      //Jika Admin sudah menghapus opsi ini dari database, jangan render kotak feedback
+                                      if (!selectedOpt) return null;
+                                      return (
+                                          <div className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
+                                              inlineQuizFeedback === 'correct'
+                                              ? 'bg-green-50 border-green-200 text-green-900' 
+                                              : 'bg-red-50 border-red-200 text-red-900'
+                                          }`}>
+                                              <div className="flex items-start gap-3">
+                                                  <div className={`p-2 rounded-full ${inlineQuizFeedback === 'correct' ? 'bg-green-100' : 'bg-red-100'}`}>
+                                                      {inlineQuizFeedback === 'correct'
+                                                          ? <Trophy className="w-5 h-5 text-green-600" />
+                                                          : <Lightbulb className="w-5 h-5 text-red-600" />
+                                                      }
+                                                  </div>
+                                                  <div>
+                                                      <p className="font-bold text-base mb-1">
+                                                          {inlineQuizFeedback === 'correct' ? "Jawaban Benar!" : "Kurang Tepat"}
+                                                      </p>
+                                                      <p className="leading-relaxed opacity-90">
+                                                          {selectedOpt.feedback}
+                                                      </p>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      );
+                                  })()
                                 )}
                             </div>
                         )}
@@ -582,7 +598,7 @@ export default function SmartStoryPlayer() {
     );
   };
 
-  // MAIN RETURN
+  //MAIN RETURN
   if (phase === "completed") {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
