@@ -8,21 +8,30 @@ export async function GET(req: Request) {
     const userId = searchParams.get('userId');
     const storyId = searchParams.get('storyId');
 
-    if (!userId || !storyId) {
-      return NextResponse.json({ success: false, message: 'Missing userId or storyId' }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ success: false, message: 'Missing userId' }, { status: 400 });
     }
 
-    //Ambil progres
-    const progress = await prisma.user_progress.findUnique({
-      where: {
-        user_id_story_id: {
-          user_id: userId,
-          story_id: storyId,
+    if (storyId) {
+      //Ambil progres untuk 1 cerita spesifik
+      const progress = await prisma.user_progress.findUnique({
+        where: {
+          user_id_story_id: {
+            user_id: userId,
+            story_id: storyId,
+          }
         }
-      }
-    });
-
-    return NextResponse.json({ success: true, data: progress });
+        });
+      return NextResponse.json({ success: true, data: progress });
+    } else {
+      //Ambil semua progres untuk user ini
+      const progresses = await prisma.user_progress.findMany({
+        where: {
+          user_id: userId
+        }
+      });
+      return NextResponse.json({ success: true, data: progresses });
+    }
   } catch (error) {
     console.error("Error fetching progress:", error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
@@ -115,10 +124,10 @@ export async function POST(req: Request) {
         updatedAnswersString = existingProgress?.quiz_answers || null;
     }
 
-    //Gunakan nilai dari database jika skor dari frontend undefined (agar tidak tertimpa null)
-    const finalPreScore = preTestScore !== undefined && preTestScore !== 0 ? preTestScore : existingProgress?.pre_test_score;
-    const finalPostScore = postTestScore !== undefined && postTestScore !== 0 ? postTestScore : existingProgress?.post_test_score;
-    
+    //Gunakan nilai dari database jika skor dari frontend undefined (agar tidak tertimpa null). jika frontend mengirim 0 secara eksplisit, simpan 0
+    const finalPreScore = preTestScore !== undefined ? preTestScore : existingProgress?.pre_test_score;
+    const finalPostScore = postTestScore !== undefined ? postTestScore : existingProgress?.post_test_score;
+
     //Update atau Buat data progress baru
     const progress = await prisma.user_progress.upsert({
       where: {

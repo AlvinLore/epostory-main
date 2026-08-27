@@ -21,6 +21,8 @@ export default function UserDashboard() {
   //Menarik data cerita
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!user?.id) return;
+
       try {
         const res = await fetch('/api/stories');
         const result = await res.json();
@@ -29,21 +31,31 @@ export default function UserDashboard() {
           //Hanya ambil cerita yang sudah "published"
           const publishedStories = result.data.filter((s: any) => s.status === "published");
 
-          //Gabungkan data cerita dengan memori progres (LocalStorage) siswa
+          //Ambil progres user dari database
+          let userProgresses = [];
+          try {
+             const progRes = await fetch(`/api/progress?userId=${user.id}`);
+             const progResult = await progRes.json();
+             if (progResult.success) {
+                userProgresses = progResult.data;
+             }
+          } catch(e) {
+             console.error("Gagal menarik progress", e);
+          }
+
+          //Gabungkan data cerita dengan memori progres (Database) siswa
           const enrichedStories = publishedStories.map((story: any, index: number) => {
-             const savedMemory = localStorage.getItem(`epostory_progress_${story.id}`);
+             const progressObj = userProgresses.find((p: any) => p.story_id === story.id);
              let userStatus = "available"; //default
              let userProgress = 0;
 
-             if (savedMemory) {
-                const memory = JSON.parse(savedMemory);
-                if (memory.phase === 'completed') {
+             if (progressObj) {
+                if (progressObj.status === 'completed') {
                     userStatus = "completed";
                     userProgress = 100;
-                } else {
+                } else if (progressObj.status === 'started' || progressObj.progress_percentage > 0) {
                     userStatus = "in_progress";
-                    //Estimasi progress
-                    userProgress = memory.chapterIndex > 0 ? 50 : 25; 
+                    userProgress = progressObj.progress_percentage || 25;
                 }
              }
 
@@ -71,7 +83,7 @@ export default function UserDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

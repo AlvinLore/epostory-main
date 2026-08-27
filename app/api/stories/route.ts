@@ -34,15 +34,27 @@ export async function POST(request: Request) {
     }
 
     //Simpan ke database MySQL
-    const newStory = await prisma.stories.create({
-      data: {
-        id: `story_${Date.now()}`, //Generate ID unik
-        number: number,  //Pastikan sebagai INT
-        title,
-        synopsis: synopsis || "",
-        topic: topic || "",
-        status: 'draft', //default
-      }
+    const newStory = await prisma.$transaction(async (tx) => {
+      const story = await tx.stories.create({
+        data: {
+          id: `story_${Date.now()}`, //Generate ID unik
+          number: number,  //Pastikan sebagai INT
+          title,
+          synopsis: synopsis || "",
+          topic: topic || "",
+          status: 'draft', //default
+        }
+      });
+      
+      await tx.notifications.create({
+        data: {
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          message: `Cerita baru "${title}" telah dibuat.`,
+          type: 'STORY_CREATED'
+        }
+      });
+
+      return story;
     });
 
     return NextResponse.json({ success: true, data: newStory }, { status: 201 });
@@ -62,8 +74,21 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, message: "ID Cerita tidak ditemukan" }, { status: 400 });
     }
 
-    await prisma.stories.delete({
-      where: { id: id }
+    await prisma.$transaction(async (tx) => {
+      const storyToDelete = await tx.stories.findUnique({ where: { id }});
+      if (storyToDelete) {
+        await tx.notifications.create({
+          data: {
+            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            message: `Cerita "${storyToDelete.title}" telah dihapus.`,
+            type: 'STORY_DELETED'
+          }
+        });
+      }
+      
+      await tx.stories.delete({
+        where: { id: id }
+      });
     });
 
     return NextResponse.json({ success: true, message: "Cerita berhasil dihapus" });

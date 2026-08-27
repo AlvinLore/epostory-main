@@ -43,6 +43,7 @@ interface StoryData {
   status: "draft" | "published";
   coverImage?: string | null;
   certificateImage?: string | null;
+  isFeedbackEnabled: boolean;
   preTest: TestItem[];
   chapters: Chapter[];
   postTest: TestItem[];
@@ -63,6 +64,7 @@ export default function StoryEditor() {
     status: "draft", 
     coverImage: null,
     certificateImage: null,
+    isFeedbackEnabled: true,
     preTest: [],
     chapters: [],
     postTest: []
@@ -91,6 +93,7 @@ export default function StoryEditor() {
             status: dbData.status || "draft",
             coverImage: dbData.cover_image,
             certificateImage: dbData.certificate_image,
+            isFeedbackEnabled: dbData.is_feedback_enabled ?? true,
             preTest: dbData.test_items.filter((a: any) => a.type === 'PRE_TEST').map((a: any) => ({
               id: a.id, question: a.question,
               options: a.test_options.map((o: any) => ({ id: o.id, text: o.text, isCorrect: o.is_correct }))
@@ -166,6 +169,7 @@ export default function StoryEditor() {
           status: story.status,
           coverImage: story.coverImage,
           certificateImage: story.certificateImage,
+          isFeedbackEnabled: story.isFeedbackEnabled,
           preTest: story.preTest,
           postTest: story.postTest,
           chapters: story.chapters
@@ -595,6 +599,17 @@ export default function StoryEditor() {
                                        <p className="text-xs text-gray-500 mt-2">
                                            *Nomor ini digunakan sebagai ID rujukan sistem. Harus unik dan tidak boleh sama dengan cerita lain.
                                        </p>
+                                   </div>
+                                   <div>
+                                       <label className="block text-sm font-medium text-gray-700 mb-1">Status Feedback Kuis (Intermezzo)</label>
+                                       <select 
+                                           value={story.isFeedbackEnabled ? "true" : "false"}
+                                           onChange={(e) => setStory({...story, isFeedbackEnabled: e.target.value === "true"})}
+                                           className="w-full h-10 px-3 rounded-md border border-gray-200 bg-gray-50 focus:bg-white text-sm text-gray-800"
+                                       >
+                                           <option value="true">Aktif (Tampilkan Feedback)</option>
+                                           <option value="false">Nonaktif (Tanpa Feedback)</option>
+                                       </select>
                                    </div>
                                </div>
                            </div>

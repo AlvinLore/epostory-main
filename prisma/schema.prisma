@@ -25,7 +25,7 @@ model chapters {
   stories     stories @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "chapters_ibfk_1")
   pages       pages[]
 
-  @@index([story_id], map: "story_id")
+  @@index([story_id], map: "chapters_ibfk_1")
 }
 
 model page_quiz_options {
@@ -36,7 +36,7 @@ model page_quiz_options {
   is_correct Boolean @default(false)
   pages      pages   @relation(fields: [page_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "page_quiz_options_ibfk_1")
 
-  @@index([page_id], map: "page_id")
+  @@index([page_id], map: "page_quiz_options_ibfk_1")
 }
 
 model pages {
@@ -50,23 +50,24 @@ model pages {
   page_quiz_options page_quiz_options[]
   chapters          chapters            @relation(fields: [chapter_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pages_ibfk_1")
 
-  @@index([chapter_id], map: "chapter_id")
+  @@index([chapter_id], map: "pages_ibfk_1")
 }
 
 model stories {
-  id                String          @id @db.VarChar(50)
-  number            String          @unique(map: "number") @db.VarChar(50)
-  title             String          @db.VarChar(255)
-  topic             String?         @db.VarChar(100)
-  synopsis          String?         @db.Text
-  status            stories_status? @default(draft)
-  cover_image       String?         @db.VarChar(255)
-  certificate_image String?         @db.VarChar(255)
-  created_at        DateTime?       @default(now()) @db.Timestamp(0)
-  updated_at        DateTime?       @default(now()) @db.Timestamp(0)
-  chapters          chapters[]
-  test_items        test_items[]
-  user_progress     user_progress[]
+  id                  String          @id @db.VarChar(50)
+  number              String          @unique(map: "number") @db.VarChar(50)
+  title               String          @db.VarChar(255)
+  topic               String?         @db.VarChar(100)
+  synopsis            String?         @db.Text
+  status              stories_status? @default(draft)
+  cover_image         String?         @db.VarChar(255)
+  certificate_image   String?         @db.VarChar(255)
+  created_at          DateTime?       @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?       @default(now()) @db.Timestamp(0)
+  is_feedback_enabled Boolean?        @default(true)
+  chapters            chapters[]
+  test_items          test_items[]
+  user_progress       user_progress[]
 }
 
 model test_items {
@@ -78,7 +79,7 @@ model test_items {
   stories      stories         @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_items_ibfk_1")
   test_options test_options[]
 
-  @@index([story_id], map: "story_id")
+  @@index([story_id], map: "test_items_ibfk_1")
 }
 
 model test_options {
@@ -88,7 +89,7 @@ model test_options {
   is_correct   Boolean    @default(false)
   test_items   test_items @relation(fields: [test_item_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "test_options_ibfk_1")
 
-  @@index([test_item_id], map: "test_item_id")
+  @@index([test_item_id], map: "test_options_ibfk_1")
 }
 
 model user_badges {
@@ -100,7 +101,7 @@ model user_badges {
   badges    badges    @relation(fields: [badge_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_badges_ibfk_2")
 
   @@unique([user_id, badge_id], map: "user_id")
-  @@index([badge_id], map: "badge_id")
+  @@index([badge_id], map: "user_badges_ibfk_2")
 }
 
 model user_progress {
@@ -118,7 +119,7 @@ model user_progress {
   stories               stories               @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_2")
 
   @@unique([user_id, story_id], map: "user_id")
-  @@index([story_id], map: "story_id")
+  @@index([story_id], map: "user_progress_ibfk_2")
 }
 
 model users {
@@ -131,6 +132,14 @@ model users {
   created_at    DateTime?       @default(now()) @db.Timestamp(0)
   user_badges   user_badges[]
   user_progress user_progress[]
+}
+
+model notifications {
+  id         String    @id @db.VarChar(50)
+  message    String    @db.Text
+  type       String    @db.VarChar(50)
+  is_read    Boolean   @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
 }
 
 enum pages_type {

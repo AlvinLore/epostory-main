@@ -43,7 +43,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await request.json();
     
-    const { number, title, status, coverImage, certificateImage, preTest, postTest, chapters } = body;
+    const { number, title, status, coverImage, certificateImage, isFeedbackEnabled, preTest, postTest, chapters } = body;
 
     //Validasi Nomor Cerita
     if (number) {
@@ -61,7 +61,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       //Update tabel stories utama
       await tx.stories.update({
         where: { id },
-        data: { number, title, status, cover_image: coverImage, certificate_image: certificateImage }
+        data: { 
+          number, 
+          title, 
+          status, 
+          cover_image: coverImage, 
+          certificate_image: certificateImage,
+          is_feedback_enabled: isFeedbackEnabled
+        }
       });
 
       //Hapus isi lama sebelum ditimpa (ON DELETE CASCADE)
@@ -128,6 +135,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           });
         }
       }
+
+      // Create notification
+      await tx.notifications.create({
+        data: {
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          message: `Cerita "${title}" telah diupdate oleh Admin.`,
+          type: 'STORY_UPDATED'
+        }
+      });
     });
 
     return NextResponse.json({ success: true, message: "Berhasil disimpan!" });

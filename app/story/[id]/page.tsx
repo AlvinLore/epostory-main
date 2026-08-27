@@ -45,7 +45,7 @@ export default function SmartStoryPlayer() {
   //State Test
   const [testIndex, setTestIndex] = useState(0);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
-  const [scores, setScores] = useState({ pre: 0, post: 0 });
+  const [scores, setScores] = useState<{ pre: number | null, post: number | null }>({ pre: null, post: null });
 
   //State Inline Kuis
   const [inlineQuizSelection, setInlineQuizSelection] = useState<string | null>(null);
@@ -70,6 +70,7 @@ export default function SmartStoryPlayer() {
           const formattedData = {
             id: dbData.id,
             title: dbData.title,
+            isFeedbackEnabled: dbData.is_feedback_enabled ?? true,
             preTest: dbData.test_items.filter((a: any) => a.type === 'PRE_TEST').map((a: any) => ({
               id: a.id, q: a.question,
               options: a.test_options.map((o: any) => o.text), 
@@ -107,12 +108,18 @@ export default function SmartStoryPlayer() {
           //Penyesuaian jika API mengembalikan array atau object tunggal
           const progressData = Array.isArray(progResult.data) ? progResult.data[0] : progResult.data;
 
+          if (progressData) {
+             setScores({
+               pre: progressData.pre_test_score !== undefined ? progressData.pre_test_score : null,
+               post: progressData.post_test_score !== undefined ? progressData.post_test_score : null
+             });
+          }
+
           if (progressData && progressData.quiz_answers) {
              const memory = JSON.parse(progressData.quiz_answers);
              setPhase(memory.phase || "chapter");
              setCurrentChapterIndex(memory.chapterIndex || 0);
              setCurrentPageIndex(memory.pageIndex || 0);
-             setScores(memory.scores || { pre: 0, post: 0 });
              setAnsweredQuizzes(memory.answeredQuizzes || {});
              
              if (memory.testAnswers && memory.phase?.includes('test')) {
@@ -159,7 +166,25 @@ export default function SmartStoryPlayer() {
       answeredQuizzes: newAnswered
     };
 
-    const percentage = Math.round(((newCh + 1) / storyData.chapters.length) * 100);
+    // Hitung progres berdasarkan jumlah halaman absolut
+    let totalPages = 0;
+    let currentPageAbsolute = 0;
+
+    storyData.chapters.forEach((ch: any, cIdx: number) => {
+        ch.pages.forEach((pg: any, pIdx: number) => {
+            totalPages++;
+            if (cIdx < newCh || (cIdx === newCh && pIdx <= newPg)) {
+                currentPageAbsolute++;
+            }
+        });
+    });
+
+    let percentage = Math.round((currentPageAbsolute / totalPages) * 100);
+    
+    //Jangan izinkan 100% jika phase belum benar-benar 'completed'
+    if (newPhase !== 'completed' && percentage >= 100) {
+        percentage = 99;
+    }
 
     try {
       const res = await fetch('/api/progress', {
@@ -504,9 +529,13 @@ export default function SmartStoryPlayer() {
                                     let btnClass = "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50";
                                     
                                     if (inlineQuizSelection === opt.id) {
-                                        if (inlineQuizFeedback === 'correct') btnClass = "border-green-500 bg-green-50 text-green-700 font-bold";
-                                        else if (inlineQuizFeedback === 'incorrect') btnClass = "border-red-500 bg-red-50 text-red-700 font-bold";
-                                        else btnClass = "border-indigo-500 bg-indigo-50 text-indigo-700";
+                                         if (storyData?.isFeedbackEnabled) {
+                                            if (inlineQuizFeedback === 'correct') btnClass = "border-green-500 bg-green-50 text-green-700 font-bold";
+                                            else if (inlineQuizFeedback === 'incorrect') btnClass = "border-red-500 bg-red-50 text-red-700 font-bold";
+                                            else btnClass = "border-indigo-500 bg-indigo-50 text-indigo-700";
+                                        } else {
+                                            btnClass = "border-indigo-500 bg-indigo-50 text-indigo-700 font-bold";
+                                        }
                                     } else if (isLocked) {
                                         btnClass = "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed";
                                     }
@@ -519,13 +548,13 @@ export default function SmartStoryPlayer() {
                                             className={`w-full p-4 rounded-xl border-2 text-left text-sm md:text-base transition-all duration-200 flex justify-between items-center ${btnClass}`}
                                         >
                                             {opt.text}
-                                            {inlineQuizSelection === opt.id && inlineQuizFeedback === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 ml-2"/>}
-                                            {inlineQuizSelection === opt.id && inlineQuizFeedback === 'incorrect' && <XCircle className="w-5 h-5 text-red-600 shrink-0 ml-2"/>}
+                                            {storyData?.isFeedbackEnabled && inlineQuizSelection === opt.id && inlineQuizFeedback === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 ml-2"/>}
+                                            {storyData?.isFeedbackEnabled && inlineQuizSelection === opt.id && inlineQuizFeedback === 'incorrect' && <XCircle className="w-5 h-5 text-red-600 shrink-0 ml-2"/>}
                                         </button>
                                     )
                                 })}
 
-                                {inlineQuizFeedback && inlineQuizSelection !== null && (
+                                {storyData?.isFeedbackEnabled && inlineQuizFeedback && inlineQuizSelection !== null && (
                                     (() => {
                                       const selectedOpt = currentPage.quizOptions.find((o: any) => o.id === inlineQuizSelection);
                                       //Jika Admin sudah menghapus opsi ini dari database, jangan render kotak feedback
@@ -610,11 +639,11 @@ export default function SmartStoryPlayer() {
           <div className="grid grid-cols-2 gap-4 mb-8">
              <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
                 <p className="text-xs text-orange-500 uppercase font-bold mb-1">Skor Pre-Test</p>
-                <p className="text-4xl font-bold text-orange-700">{scores.pre}</p>
+                <p className="text-4xl font-bold text-orange-700">{scores.pre !== null ? scores.pre : "-"}</p>
              </div>
              <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100">
                 <p className="text-xs text-purple-500 uppercase font-bold mb-1">Skor Post-Test</p>
-                <p className="text-4xl font-bold text-purple-700">{scores.post}</p>
+                <p className="text-4xl font-bold text-purple-700">{scores.post !== null ? scores.post : "-"}</p>
              </div>
           </div>
 

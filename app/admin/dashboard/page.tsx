@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,23 @@ import { BarChart3, BookOpen, Users } from "lucide-react"; // Ikon cepat
 import Link from "next/link"; // Link cepat
 
 export default function AdminDashboard() {
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        if (data.success) {
+          setNotifications(data.data);
+        }
+      } catch (error) {
+        console.error("Gagal menarik notifikasi", error);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
   const stats = [
     {
       label: "Total Cerita",
@@ -25,19 +43,6 @@ export default function AdminDashboard() {
       value: "67",
       icon: BarChart3,
       color: "bg-orange-100 text-orange-600",
-    },
-  ];
-
-  const recentActivities = [
-    {
-      title: "Update Story",
-      description: '"Chapter 3: Mengurangi Polusi Udara" dipublikasikan',
-      timestamp: "3 jam lalu",
-    },
-    {
-      title: "Cerita Baru Ditambahkan",
-      description: 'Chapter 3: Mengurangi Polusi Udara',
-      timestamp: "1 hari lalu",
     },
   ];
 
@@ -103,24 +108,32 @@ export default function AdminDashboard() {
                       Aktivitas Sebelumnya
                     </h2>
                   </div>
-                  <div className="divide-y divide-gray-100">
-                    {recentActivities.map((activity, index) => (
-                      <div key={index} className="px-4 md:px-6 py-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-0">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm md:text-base">
-                              {activity.title}
-                            </h3>
-                            <p className="text-xs md:text-sm text-gray-500 mt-1">
-                              {activity.description}
-                            </p>
-                          </div>
-                          <span className="text-xs text-gray-400 flex-shrink-0 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
-                            {activity.timestamp}
-                          </span>
-                        </div>
+                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500">
+                        Belum ada aktivitas baru.
                       </div>
-                    ))}
+                    ) : (
+                      notifications.map((activity, index) => (
+                        <div key={index} className="px-4 md:px-6 py-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-0">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
+                                {activity.type === 'STORY_CREATED' && 'Cerita Baru Ditambahkan'}
+                                {activity.type === 'STORY_UPDATED' && 'Update Story'}
+                                {activity.type === 'STORY_DELETED' && 'Cerita Dihapus'}
+                              </h3>
+                              <p className="text-xs md:text-sm text-gray-500 mt-1">
+                                {activity.message}
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-400 flex-shrink-0 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                              {activity.created_at ? new Date(activity.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'}) : 'Baru saja'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
