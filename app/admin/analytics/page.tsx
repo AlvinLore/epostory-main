@@ -1,34 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
-import { BarChart3, Search, Download, Users, Filter } from "lucide-react";
+import { BarChart3, Search, Download, Users, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-const DUMMY_RESPONDENTS = [
-  { id: "R001", name: "Budi Santoso", email: "budi@stis.ac.id", gender: "Laki-laki", preTest: 40, postTest: 85, nGain: 0.75 },
-  { id: "R002", name: "Siti Aminah", email: "siti@stis.ac.id", gender: "Perempuan", preTest: 50, postTest: 90, nGain: 0.80 },
-  { id: "R003", name: "Alex Sitompul", email: "alex@stis.ac.id", gender: "Laki-laki", preTest: 30, postTest: 70, nGain: 0.57 },
-  { id: "R004", name: "Dewi Lestari", email: "dewi@stis.ac.id", gender: "Perempuan", preTest: 60, postTest: 95, nGain: 0.88 },
-  { id: "R005", name: "Andi Saputra", email: "andi@stis.ac.id", gender: "Laki-laki", preTest: 45, postTest: 75, nGain: 0.55 },
-];
 
 export default function AdminAnalytics() {
   const [searchTerm, setSearchTerm] = useState("");
   const [genderFilter, setGenderFilter] = useState("Semua");
   const [hasSearched, setHasSearched] = useState(false);
-  const [filteredData, setFilteredData] = useState<typeof DUMMY_RESPONDENTS>([]);
+  const [allData, setAllData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/admin/analytics");
+      const json = await res.json();
+      if (json.success) {
+        setAllData(json.data);
+      }
+    } catch(err) {
+      console.error("Gagal menarik analitik", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Logika Pencarian & Filter
   const handleSearch = () => {
-    let result = DUMMY_RESPONDENTS;
-    // Filter berdasarkan nama/email
+    let result = allData;
+    // Filter berdasarkan nama/email/judul cerita
     if (searchTerm) {
       result = result.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.storyTitle?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -44,10 +58,10 @@ export default function AdminAnalytics() {
   // Logika Ekspor ke CSV
   const handleExportCSV = () => {
     if (filteredData.length === 0) return;
-    const headers = ["ID,Nama,Email,Jenis Kelamin,Pre-Test,Post-Test,N-Gain Score"];
+    const headers = ["ID,Nama,Email,Gender,Cerita,Pre-Test,Nilai Kuis,Post-Test,N-Gain Score"];
     // Mapping data ke baris CSV
     const rows = filteredData.map(row => 
-      `${row.id},"${row.name}","${row.email}",${row.gender},${row.preTest},${row.postTest},${row.nGain}`
+      `${row.id},"${row.name}","${row.email}",${row.gender},"${row.storyTitle}",${row.preTest},${row.intermezzoScore},${row.postTest},${row.nGain}`
     );
     // Menggabungkan header dan isi
     const csvContent = headers.concat(rows).join("\n");
@@ -83,7 +97,7 @@ export default function AdminAnalytics() {
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input 
-                    placeholder="Cari berdasarkan nama atau email... (Kosongkan untuk cari semua)" 
+                    placeholder="Cari berdasarkan nama, email, atau cerita... (Kosongkan untuk cari semua)" 
                     className="pl-10 h-12"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -104,8 +118,8 @@ export default function AdminAnalytics() {
                   </select>
                 </div>
 
-                <Button onClick={handleSearch} className="h-12 bg-indigo-600 hover:bg-indigo-700 px-8">
-                  Tampilkan Data
+                <Button onClick={handleSearch} disabled={isLoading} className="h-12 bg-indigo-600 hover:bg-indigo-700 px-8">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Tampilkan Data"}
                 </Button>
               </div>
             </div>
@@ -116,7 +130,7 @@ export default function AdminAnalytics() {
                 <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Belum Ada Data Tertampil</h3>
                 <p className="text-gray-500 max-w-md mx-auto">
-                  Gunakan fitur pencarian di atas atau langsung tekan <b>"Tampilkan Data"</b> untuk melihat seluruh daftar responden Anda.
+                  Gunakan fitur pencarian di atas atau langsung tekan <b>"Tampilkan Data"</b> untuk melihat seluruh daftar progress responden Anda.
                 </p>
               </div>
             ) : (
@@ -138,10 +152,11 @@ export default function AdminAnalytics() {
                   <table className="w-full text-left text-sm text-gray-600">
                     <thead className="bg-gray-50 text-gray-700 font-bold uppercase text-xs border-b">
                       <tr>
-                        <th className="px-6 py-4">ID</th>
                         <th className="px-6 py-4">Nama Responden</th>
                         <th className="px-6 py-4">Gender</th>
+                        <th className="px-6 py-4">Cerita</th>
                         <th className="px-6 py-4 text-center">Pre-Test</th>
+                        <th className="px-6 py-4 text-center">Nilai Kuis</th>
                         <th className="px-6 py-4 text-center">Post-Test</th>
                         <th className="px-6 py-4 text-center">N-Gain</th>
                       </tr>
@@ -150,20 +165,23 @@ export default function AdminAnalytics() {
                       {filteredData.length > 0 ? (
                         filteredData.map((row, i) => (
                           <tr key={row.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 font-medium text-gray-900">{row.id}</td>
                             <td className="px-6 py-4">
                               <p className="font-bold text-gray-900">{row.name}</p>
                               <p className="text-xs text-gray-500">{row.email}</p>
                             </td>
                             <td className="px-6 py-4">{row.gender}</td>
+                            <td className="px-6 py-4 max-w-[200px] truncate" title={row.storyTitle}>{row.storyTitle}</td>
                             <td className="px-6 py-4 text-center text-orange-600 font-semibold">{row.preTest}</td>
+                            <td className="px-6 py-4 text-center text-blue-600 font-semibold">{row.intermezzoScore}</td>
                             <td className="px-6 py-4 text-center text-purple-600 font-semibold">{row.postTest}</td>
-                            <td className="px-6 py-4 text-center font-bold text-green-600">{row.nGain.toFixed(2)}</td>
+                            <td className="px-6 py-4 text-center font-bold text-green-600">
+                              {typeof row.nGain === 'number' ? row.nGain.toFixed(2) : '-'}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-gray-500 font-medium">
+                          <td colSpan={7} className="px-6 py-12 text-center text-gray-500 font-medium">
                             Data tidak ditemukan dengan filter tersebut.
                           </td>
                         </tr>

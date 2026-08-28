@@ -229,14 +229,15 @@ export default function SmartStoryPlayer() {
   //LOGIC HANDLERS UNTUK TES PRE/POST
   const handleTestSubmit = async (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
-    let score = 0;
+    let rawScore = 0;
     questions.forEach((q: any, idx: number) => {
-      if (testAnswers[idx] === q.ans) score += 1;
+      if (testAnswers[idx] === q.ans) rawScore += 1;
     });
 
-    const newScores = { ...scores, [type]: score };
+    const percentageScore = questions.length > 0 ? (rawScore / questions.length) * 100 : 0;
+    const newScores = { ...scores, [type]: percentageScore };
     setScores(newScores);
-    toast.success(`${type === 'pre' ? 'Pre-Test' : 'Post-Test'} Selesai! Skor: ${score}`);
+    toast.success(`${type === 'pre' ? 'Pre-Test' : 'Post-Test'} Selesai! Skor: ${Number(percentageScore.toFixed(2))}`);
 
     setTestAnswers({});
     setTestIndex(0);
@@ -639,11 +640,11 @@ export default function SmartStoryPlayer() {
           <div className="grid grid-cols-2 gap-4 mb-8">
              <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
                 <p className="text-xs text-orange-500 uppercase font-bold mb-1">Skor Pre-Test</p>
-                <p className="text-4xl font-bold text-orange-700">{scores.pre !== null ? scores.pre : "-"}</p>
+                <p className="text-4xl font-bold text-orange-700">{scores.pre !== null ? Number(scores.pre.toFixed(2)) : "-"}</p>
              </div>
              <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100">
                 <p className="text-xs text-purple-500 uppercase font-bold mb-1">Skor Post-Test</p>
-                <p className="text-4xl font-bold text-purple-700">{scores.post !== null ? scores.post : "-"}</p>
+                <p className="text-4xl font-bold text-purple-700">{scores.post !== null ? Number(scores.post.toFixed(2)) : "-"}</p>
              </div>
           </div>
 

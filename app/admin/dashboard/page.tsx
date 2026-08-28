@@ -4,43 +4,69 @@ import { useState, useEffect } from "react";
 import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
-import { BarChart3, BookOpen, Users } from "lucide-react"; // Ikon cepat
+import { BarChart3, BookOpen, Users, ChevronLeft, ChevronRight } from "lucide-react"; //Ikon
 import Link from "next/link"; // Link cepat
 
 export default function AdminDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [statsData, setStatsData] = useState({
+    totalStories: 0,
+    activeUsers: 0,
+    totalAttempted: 0
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        //Fetch stats
+        const statsRes = await fetch('/api/admin/stats');
+        const statsJson = await statsRes.json();
+        if (statsJson.success) {
+          setStatsData(statsJson.data);
+        }
+      } catch (error) {
+        console.error("Gagal menarik data statistik", error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch(`/api/notifications?page=${page}&limit=10`);
         const data = await res.json();
         if (data.success) {
           setNotifications(data.data);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+          }
         }
       } catch (error) {
         console.error("Gagal menarik notifikasi", error);
       }
     };
     fetchNotifications();
-  }, []);
+  }, [page]);
 
   const stats = [
     {
       label: "Total Cerita",
-      value: "3",
+      value: statsData.totalStories.toString(),
       icon: BookOpen,
       color: "bg-blue-100 text-blue-600",
     },
     {
       label: "User Aktif",
-      value: "342",
+      value: statsData.activeUsers.toString(),
       icon: Users,
       color: "bg-green-100 text-green-600",
     },
     {
       label: "Total Cerita Dikerjakan",
-      value: "67",
+      value: statsData.totalAttempted.toString(),
       icon: BarChart3,
       color: "bg-orange-100 text-orange-600",
     },
@@ -102,13 +128,36 @@ export default function AdminDashboard() {
               
               {/* Recent Activities */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-4 md:px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+                  <div className="px-4 md:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                     <h2 className="text-base md:text-lg font-bold text-gray-900">
                       Aktivitas Sebelumnya
                     </h2>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="p-1 rounded bg-white border border-gray-200 text-gray-500 disabled:opacity-50 hover:bg-gray-50"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-medium text-gray-600">
+                          {page} / {totalPages}
+                        </span>
+                        <button 
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          className="p-1 rounded bg-white border border-gray-200 text-gray-500 disabled:opacity-50 hover:bg-gray-50"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                  <div className="divide-y divide-gray-100 flex-1">
                     {notifications.length === 0 ? (
                       <div className="p-6 text-center text-gray-500">
                         Belum ada aktivitas baru.

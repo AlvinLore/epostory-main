@@ -81,7 +81,7 @@ export async function POST(req: Request) {
             console.error("Gagal parse new quiz_answers", e);
         }
         
-        const mergedAnswers: any = {
+        mergedAnswers = {
             ...currentAnswers,
             ...newAnswersParsed
         };
@@ -115,7 +115,9 @@ export async function POST(req: Request) {
                 }
             }
             
-            mergedAnswers.calculatedIntermezzoScore = correctCount;
+            //Konversi nilai intermezzo menjadi persentase skala 100
+            const percentageScore = totalActiveQuizzes > 0 ? (correctCount / totalActiveQuizzes) * 100 : 0;
+            mergedAnswers.calculatedIntermezzoScore = percentageScore;
             mergedAnswers.totalActiveQuizzes = totalActiveQuizzes;
         }
 
@@ -127,6 +129,26 @@ export async function POST(req: Request) {
     //Gunakan nilai dari database jika skor dari frontend undefined (agar tidak tertimpa null). jika frontend mengirim 0 secara eksplisit, simpan 0
     const finalPreScore = preTestScore !== undefined ? preTestScore : existingProgress?.pre_test_score;
     const finalPostScore = postTestScore !== undefined ? postTestScore : existingProgress?.post_test_score;
+
+    //Kalkulasi nilai kuis intermezzo
+    let finalIntermezzoScore = existingProgress?.intermezzo_quiz_score;
+    if (isCompleted && Object.keys(mergedAnswers).length > 0) {
+        if (mergedAnswers.totalActiveQuizzes === 0) {
+            finalIntermezzoScore = null; //Tanpa kuis
+        } else if (mergedAnswers.calculatedIntermezzoScore !== undefined) {
+            finalIntermezzoScore = mergedAnswers.calculatedIntermezzoScore; //Skala 0 - 100
+        }
+    }
+
+    //Kalkulasi N-Gain Score
+    let finalNGain = existingProgress?.n_gain_score;
+    if (isCompleted && finalPreScore !== null && finalPostScore !== null) {
+        if (finalPreScore < 100) {
+            finalNGain = (finalPostScore - finalPreScore) / (100 - finalPreScore);
+        } else {
+            finalNGain = 0;
+        }
+    }
 
     //Update atau Buat data progress baru
     const progress = await prisma.user_progress.upsert({
@@ -143,6 +165,8 @@ export async function POST(req: Request) {
         last_read_at: new Date(),
         pre_test_score: finalPreScore,
         post_test_score: finalPostScore,
+        intermezzo_quiz_score: finalIntermezzoScore,
+        n_gain_score: finalNGain,
       },
       create: {
         id: `prog_${userId}_${storyId}`,
@@ -153,6 +177,8 @@ export async function POST(req: Request) {
         quiz_answers: updatedAnswersString,
         pre_test_score: finalPreScore,
         post_test_score: finalPostScore,
+        intermezzo_quiz_score: finalIntermezzoScore,
+        n_gain_score: finalNGain,
       },
     });
 

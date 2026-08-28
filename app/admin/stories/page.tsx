@@ -5,7 +5,7 @@ import AdminRoute from "@/components/AdminRoute";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit2, Trash2, BarChart3, Users, BookOpen, Plus, Loader2, Search } from "lucide-react";
+import { Edit2, Trash2, BookOpen, Plus, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -104,12 +104,6 @@ export default function StoryManagement() {
     }
   };
 
-  const stats = [
-    { label: "Total Cerita", value: isLoading ? "-" : stories.length.toString(), icon: BookOpen, color: "blue" },
-    { label: "Active Users", value: "342", icon: Users, color: "green" }, 
-    { label: "Total Cerita Dikerjakan", value: "67", icon: BarChart3, color: "orange" }, 
-  ];
-
   return (
     <AdminRoute>
       <div className="flex min-h-screen bg-gray-50">
@@ -136,29 +130,6 @@ export default function StoryManagement() {
           </div>
 
           <div className="p-4 md:p-8">
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-              {stats.map((stat, index) => {
-                const Icon = stat.icon;
-                let colorClasses = "";
-                if (stat.color === "blue") colorClasses = "bg-blue-100 text-blue-600";
-                else if (stat.color === "green") colorClasses = "bg-green-100 text-green-600";
-                else if (stat.color === "orange") colorClasses = "bg-orange-100 text-orange-600";
-
-                return (
-                  <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex items-start space-x-3 md:space-x-4 hover:shadow-md transition-all">
-                    <div className={`p-2 md:p-3 rounded-lg ${colorClasses} flex-shrink-0`}>
-                      <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-gray-500 text-xs md:text-sm font-medium">{stat.label}</p>
-                      <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               
               {/* HEADER TABEL */}

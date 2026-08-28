@@ -109,12 +109,13 @@ model user_progress {
   user_id               String                @db.VarChar(50)
   story_id              String                @db.VarChar(50)
   progress_percentage   Int?                  @default(0)
-  pre_test_score        Int?
-  post_test_score       Int?
-  intermezzo_quiz_score Int?
+  pre_test_score        Float?                @db.Float
+  post_test_score       Float?                @db.Float
+  intermezzo_quiz_score Float?                @db.Float
   status                user_progress_status? @default(started)
   quiz_answers          String?               @db.LongText
   last_read_at          DateTime?             @default(now()) @db.Timestamp(0)
+  n_gain_score          Float?                @db.Float
   users                 users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_1")
   stories               stories               @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_progress_ibfk_2")
 
