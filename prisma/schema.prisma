@@ -130,6 +130,7 @@ model users {
   password      String          @db.VarChar(255)
   role          users_role?     @default(user)
   gender        users_gender?   @default(EMPTY_ENUM_VALUE)
+  school        String?         @db.VarChar(150)
   created_at    DateTime?       @default(now()) @db.Timestamp(0)
   user_badges   user_badges[]
   user_progress user_progress[]

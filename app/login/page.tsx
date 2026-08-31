@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner"; // Untuk notifikasi pop up
 
 export default function LoginPage() {
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [activeField, setActiveField] = useState<"email" | "password" | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -166,19 +167,32 @@ export default function LoginPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setActiveField("password")}
-                  onBlur={() => setActiveField(null)}
-                  className={`rounded-lg border-2 transition-colors ${
-                    activeField === "password"
-                      ? "border-blue-500 ring-2 ring-blue-200"
-                      : "border-gray-300"
-                  }`}
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setActiveField("password")}
+                    onBlur={() => setActiveField(null)}
+                    className={`rounded-lg border-2 transition-colors pr-10 ${
+                      activeField === "password"
+                        ? "border-blue-500 ring-2 ring-blue-200"
+                        : "border-gray-300"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Tombol Submit */}

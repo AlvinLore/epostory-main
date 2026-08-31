@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export default function AdminProfile() {
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout, updateProfile, changePassword } = useAuth();
   const router = useRouter();
 
   // State untuk form profile
@@ -39,10 +39,17 @@ export default function AdminProfile() {
     }
   }, [user]);
 
-  const handleSaveProfile = () => {
-    toast.success("Profil Diperbarui", {
-      description: "Perubahan profil admin sukses disimpan (Simulasi frontend)."
-    });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    const success = await updateProfile(formData.fullName, "", "");
+    if (success) {
+      toast.success("Profil Diperbarui", {
+        description: "Perubahan profil admin sukses disimpan."
+      });
+    }
+    setIsSavingProfile(false);
   };
 
   const handleSavePassword = async () => {
@@ -52,6 +59,10 @@ export default function AdminProfile() {
     }
     if (passwords.new !== passwords.confirm) {
       toast.error("Gagal", { description: "Password baru dan konfirmasi tidak cocok." });
+      return;
+    }
+    if (passwords.new.length < 8) {
+      toast.error("Gagal", { description: "Password baru minimal terdiri dari 8 karakter." });
       return;
     }
 
@@ -96,12 +107,12 @@ export default function AdminProfile() {
                   <div className="absolute top-0 left-0 w-full h-24 bg-blue-50 z-0"></div>
                   <div className="relative z-10 w-28 h-28 rounded-full bg-white p-1 mx-auto mb-4 shadow-sm">
                       <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center text-white text-4xl font-bold">
-                        {formData.fullName.charAt(0).toUpperCase()}
+                        {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
                       </div>
                   </div>
                   <div className="relative z-10">
-                      <h2 className="text-xl font-bold text-gray-900">{formData.fullName}</h2>
-                      <p className="text-gray-500 text-sm mb-4">{formData.email}</p>
+                      <h2 className="text-xl font-bold text-gray-900">{user?.name}</h2>
+                      <p className="text-gray-500 text-sm mb-4">{user?.email}</p>
                       <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-full border border-blue-200">
                         Admin
                       </span>
@@ -153,8 +164,8 @@ export default function AdminProfile() {
                     </div>
                     
                     <div className="pt-2 flex justify-end">
-                      <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700 text-white px-8 gap-2">
-                        <Save className="w-4 h-4" /> Simpan Perubahan
+                      <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="bg-blue-600 hover:bg-blue-700 text-white px-8 gap-2">
+                        <Save className="w-4 h-4" /> {isSavingProfile ? "Menyimpan..." : "Simpan Perubahan"}
                       </Button>
                     </div>
                   </div>
@@ -184,7 +195,7 @@ export default function AdminProfile() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Password Baru</label>
                         <Input 
                           type="password" 
-                          placeholder="Minimal 6 karakter"
+                          placeholder="Minimal 8 karakter"
                           value={passwords.new} 
                           onChange={(e) => setPasswords({...passwords, new: e.target.value})} 
                           className="focus-visible:ring-blue-500"

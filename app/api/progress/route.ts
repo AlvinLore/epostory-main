@@ -28,6 +28,9 @@ export async function GET(req: Request) {
       const progresses = await prisma.user_progress.findMany({
         where: {
           user_id: userId
+          },
+        include: {
+          stories: true
         }
       });
       return NextResponse.json({ success: true, data: progresses });

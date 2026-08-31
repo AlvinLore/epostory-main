@@ -12,7 +12,9 @@ export default function AdminSettings() {
   const [newAdmin, setNewAdmin] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleCreateAdmin = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validasi sederhana
@@ -20,14 +22,35 @@ export default function AdminSettings() {
       toast.error("Gagal", { description: "Semua kolom wajib diisi!" });
       return;
     }
+    
+    if (newAdmin.password.length < 8) {
+      toast.error("Gagal", { description: "Password harus terdiri dari minimal 8 karakter!" });
+      return;
+    }
 
-    // Simulasi pembuatan akun (Nanti dihubungkan ke API/Backend)
-    toast.success("Berhasil!", {
-      description: `Akun admin untuk ${newAdmin.name} berhasil dibuat.`,
-    });
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/admin/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAdmin)
+      });
+      const result = await res.json();
 
-    // Reset Form
-    setNewAdmin({ name: "", email: "", password: "" });
+    if (!res.ok || !result.success) {
+        toast.error("Gagal Mendaftarkan Admin", { description: result.message || "Terjadi kesalahan." });
+      } else {
+        toast.success("Berhasil!", {
+          description: `Akun admin untuk ${newAdmin.name} berhasil dibuat.`,
+        });
+        // Reset Form
+        setNewAdmin({ name: "", email: "", password: "" });
+      }
+    } catch (error) {
+      toast.error("Error", { description: "Tidak dapat terhubung ke server." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,8 +128,8 @@ export default function AdminSettings() {
                   </div>
 
                   <div className="pt-4 flex justify-end">
-                    <Button type="submit" className="bg-gray-900 hover:bg-gray-800 gap-2">
-                      <UserPlus className="w-4 h-4" /> Daftarkan Admin
+                    <Button type="submit" disabled={isLoading} className="bg-gray-900 hover:bg-gray-800 gap-2">
+                      <UserPlus className="w-4 h-4" /> {isLoading ? "Mendaftarkan..." : "Daftarkan Admin"}
                     </Button>
                   </div>
                 </form>

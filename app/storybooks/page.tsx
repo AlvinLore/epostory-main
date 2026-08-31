@@ -1,45 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { 
   BookOpen, Clock, PlayCircle, CheckCircle2, 
-  ChevronDown, ChevronUp, Award, Download, X 
+  ChevronDown, ChevronUp, Award, Download, X, Loader2
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-
-//DUMMY DATA
-const RECENT_STORIES = [
-  {
-    id: "1",
-    title: "Petualangan Udara Bersih",
-    progress: 100,
-    lastRead: "2 jam yang lalu",
-    image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=800",
-    certificateImage: "/Sertifikat Epostory 1.png",
-    quizScore: 85
-  },
-  {
-    id: "2",
-    title: "Misteri Kabut Kelabu",
-    progress: 45,
-    lastRead: "Kemarin",
-    image: "https://images.unsplash.com/photo-1584631483163-548c89fb4bc2?auto=format&fit=crop&q=80&w=800",
-    certificateImage: "",
-    quizScore: 0
-  },
-  {
-    id: "3",
-    title: "Pahlawan Tanpa Tanda Jasa",
-    progress: 100,
-    lastRead: "3 hari yang lalu",
-    image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
-    certificateImage: "",
-    quizScore: 95
-  }
-];
 
 export default function MyStorybooks() {
   const { user } = useAuth(); //Mengambil data
@@ -48,12 +17,60 @@ export default function MyStorybooks() {
   const [isContinueOpen, setIsContinueOpen] = useState(true);
   const [isCompletedOpen, setIsCompletedOpen] = useState(true);
 
+  //State untuk Data API
+  const [continueStories, setContinueStories] = useState<any[]>([]);
+  const [completedStories, setCompletedStories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   //State untuk Fitur Sertifikat
-  const [selectedCert, setSelectedCert] = useState<typeof RECENT_STORIES[0] | null>(null);
+  const [selectedCert, setSelectedCert] = useState<any | null>(null);
 
   //Memisahkan data berdasarkan progress
-  const continueStories = RECENT_STORIES.filter(s => s.progress < 100);
-  const completedStories = RECENT_STORIES.filter(s => s.progress === 100);
+  useEffect(() => {
+    if (user?.id) {
+      fetchProgress();
+    }
+  }, [user]);
+
+  const fetchProgress = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/progress?userId=${user?.id}`);
+      const result = await res.json();
+      if (result.success) {
+        const progresses = result.data;
+        
+        const continues = progresses.filter((p: any) => p.status !== 'completed' && p.stories);
+        const completeds = progresses.filter((p: any) => p.status === 'completed' && p.stories);
+
+        const formatDate = (dateStr: string) => {
+          return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        };
+
+        setContinueStories(continues.map((p: any) => ({
+          id: p.stories.id,
+          title: p.stories.title,
+          progress: p.progress_percentage || 0,
+          lastRead: formatDate(p.updated_at),
+          image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
+        })));
+
+        setCompletedStories(completeds.map((p: any) => ({
+          id: p.stories.id,
+          title: p.stories.title,
+          progress: 100,
+          lastRead: formatDate(p.updated_at),
+          image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
+          certificateImage: p.stories.certificate_image,
+          quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : 0
+        })));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   //Fungsi Konversi Nilai kuis ke Predikat
   const getPredicate = (score: number) => {
@@ -143,9 +160,15 @@ export default function MyStorybooks() {
 
         {/* Content Area */}
         <div className="p-4 md:p-8">
-          <div className="max-w-6xl mx-auto space-y-8">
-            
-            {/* SUB MENU 1: CERITA BELUM SELESAI (CONTINUE) */}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 text-green-600 animate-spin mb-4" />
+              <p className="text-gray-500 font-medium">Memuat histori cerita Anda...</p>
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto space-y-8">
+              
+              {/* SUB MENU 1: CERITA BELUM SELESAI (CONTINUE) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <button 
                 onClick={() => setIsContinueOpen(!isContinueOpen)}
@@ -257,8 +280,9 @@ export default function MyStorybooks() {
                 </div>
               )}
             </div>
-
+            
           </div>
+          )}
         </div>
       </main>
 

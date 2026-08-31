@@ -10,6 +10,7 @@ interface User {
   email: string;
   role: "user" | "admin";
   gender?: string;
+  school?: string | null;
 }
 
 interface AuthContextType {
@@ -18,7 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; role?: string }>;
   signup: (name: string, email: string, password: string, gender: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (name: string, gender: string) => Promise<boolean>;
+  updateProfile: (name: string, gender: string, school: string) => Promise<boolean>;
   changePassword: (current: string, newPass: string) => Promise<boolean>;
 }
 
@@ -102,27 +103,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     toast.info("Anda telah log keluar");
   };
 
-  //Fungsi Update Profil (Simulasi Frontend sebelum API Profil Dibuat)
-  const updateProfile = async (name: string, gender: string): Promise<boolean> => {
+  //Fungsi Update Profil
+  const updateProfile = async (name: string, gender: string, school: string): Promise<boolean> => {
     if (!user) return false;
     try {
-      //Sementara perbarui state lokal & localStorage, nanti kita sambungkan ke API khusus profil
-      const updatedUser = { ...user, name, gender };
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, name, gender, school }),
+      });
+      const result = await res.json();
+      
+      if (!res.ok || !result.success) {
+        toast.error("Gagal", { description: result.message || "Gagal memperbarui profil" });
+        return false;
+      }
+      
+      //Perbarui state lokal & localStorage
+      const updatedUser = { ...user, name, gender, school };
       setUser(updatedUser);
       localStorage.setItem("epostory_user", JSON.stringify(updatedUser));
+
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      toast.error("Ralat Sistem", { description: "Gagal terhubung ke server." });
       return false;
     }
   };
 
-  //Fungsi Ganti Password (Simulasi Frontend)
+  //Fungsi Ganti Password
   const changePassword = async (current: string, newPass: string): Promise<boolean> => {
+    if (!user) throw new Error("Tidak ada sesi user aktif");
     try {
-      //Sementara simulasi sukses, nanti disambungkan ke API Keamanan Profil
+      const res = await fetch("/api/auth/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, currentPassword: current, newPassword: newPass }),
+      });
+      const result = await res.json();
+      
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Gagal memperbarui password");
+      }
       return true;
-    } catch (error) {
-      return false;
+    } catch (error: any) {
+      throw error;
     }
   };
 

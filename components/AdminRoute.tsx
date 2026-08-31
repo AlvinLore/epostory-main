@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!loading) {
       if (!user) {
         router.push("/login");
-      } else if (user.role !== "admin") { // Pastikan user object punya properti 'role'
-        router.push("/dashboard"); // Redirect user biasa ke dashboard mereka
+      } else if (user.role !== "admin") {
+        router.push("/dashboard");
       }
     }
-  }, [user, isLoading, router]);
+  }, [user, loading, router]);
 
-  if (isLoading) {
+  if (loading) {
     return <div className="flex h-screen items-center justify-center">Loading Admin Panel...</div>;
   }
 
