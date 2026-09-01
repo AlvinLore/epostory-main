@@ -45,7 +45,7 @@ export default function SmartStoryPlayer() {
   //State Test
   const [testIndex, setTestIndex] = useState(0);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
-  const [scores, setScores] = useState<{ pre: number | null, post: number | null }>({ pre: null, post: null });
+  const [scores, setScores] = useState<{ pre: number | null, post: number | null, quiz: number | null }>({ pre: null, post: null, quiz: null });
 
   //State Inline Kuis
   const [inlineQuizSelection, setInlineQuizSelection] = useState<string | null>(null);
@@ -111,7 +111,8 @@ export default function SmartStoryPlayer() {
           if (progressData) {
              setScores({
                pre: progressData.pre_test_score !== undefined ? progressData.pre_test_score : null,
-               post: progressData.post_test_score !== undefined ? progressData.post_test_score : null
+               post: progressData.post_test_score !== undefined ? progressData.post_test_score : null,
+               quiz: progressData.intermezzo_quiz_score !== undefined ? progressData.intermezzo_quiz_score : null
              });
           }
 
@@ -200,7 +201,22 @@ export default function SmartStoryPlayer() {
           postTestScore: newScores.post
         })
       });
-      return await res.json();
+      const data = await res.json();
+      
+      if (data?.newlyEarnedBadges && data.newlyEarnedBadges.length > 0) {
+        data.newlyEarnedBadges.forEach((badge: any) => {
+          toast.success(
+            <div className="flex flex-col items-center text-center gap-2">
+               <Trophy className="w-10 h-10 text-yellow-500 animate-bounce" />
+               <p className="font-bold text-gray-900">Achievement Unlocked!</p>
+               <p className="font-semibold text-green-700">{badge.name}</p>
+               <p className="text-xs text-gray-600">{badge.description}</p>
+            </div>, 
+            { duration: 6000 }
+          );
+        });
+      }
+      return data;
     } catch (err) {
       console.error("Gagal menyimpan progress ke database", err);
       return null;
@@ -245,18 +261,11 @@ export default function SmartStoryPlayer() {
     const nextPhase: GlobalPhase = type === "pre" ? "chapter" : "completed";
     setPhase(nextPhase);
     
-    //Simpan progres ke database (Lencana akan muncul jika return JSON terdapat atribut newBadge)
+    //Simpan progres ke database
     const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, newScores, answeredQuizzes);
 
-    if (type === "post" && result?.newBadge) {
-        toast.success(
-          <div className="flex flex-col items-center gap-2">
-             <Trophy className="w-10 h-10 text-yellow-500" />
-             <p className="font-bold">Lencana Terbuka!</p>
-             <p className="text-sm">{result.newBadge}</p>
-          </div>, 
-          { duration: 5000 }
-        );
+    if (result?.data?.intermezzo_quiz_score !== undefined && result.data.intermezzo_quiz_score !== null) {
+        setScores(prev => ({ ...prev, quiz: result.data.intermezzo_quiz_score }));
     }
   };
 
@@ -313,16 +322,8 @@ export default function SmartStoryPlayer() {
             setPhase(nextPhase);
             const result = await saveProgressToDB(nextPhase, currentChapterIndex, currentPageIndex, scores, answeredQuizzes);
             
-            //Beri badge jika tamat langsung tanpa post-test
-            if (nextPhase === "completed" && result?.newBadge) {
-                toast.success(
-                  <div className="flex flex-col items-center gap-2">
-                     <Trophy className="w-10 h-10 text-yellow-500" />
-                     <p className="font-bold">Lencana Terbuka!</p>
-                     <p className="text-sm">{result.newBadge}</p>
-                  </div>, 
-                  { duration: 5000 }
-                );
+            if (nextPhase === "completed" && result?.data?.intermezzo_quiz_score !== undefined && result.data.intermezzo_quiz_score !== null) {
+                setScores(prev => ({ ...prev, quiz: result.data.intermezzo_quiz_score }));
             }
         }, 1500); 
     } else {
@@ -637,14 +638,18 @@ export default function SmartStoryPlayer() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Petualangan Selesai!</h1>
           <p className="text-gray-500 mb-8">Terima kasih telah ikut belajar.</p>
           
-          <div className="grid grid-cols-2 gap-4 mb-8">
-             <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
-                <p className="text-xs text-orange-500 uppercase font-bold mb-1">Skor Pre-Test</p>
-                <p className="text-4xl font-bold text-orange-700">{scores.pre !== null ? Number(scores.pre.toFixed(2)) : "-"}</p>
+          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
+             <div className="bg-orange-50 p-4 md:p-5 rounded-2xl border border-orange-100 flex flex-col justify-center">
+                <p className="text-[10px] md:text-xs text-orange-500 uppercase font-bold mb-1">Pre-Test</p>
+                <p className="text-2xl md:text-3xl font-bold text-orange-700">{scores.pre !== null ? Number(scores.pre.toFixed(2)) : "-"}</p>
              </div>
-             <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100">
-                <p className="text-xs text-purple-500 uppercase font-bold mb-1">Skor Post-Test</p>
-                <p className="text-4xl font-bold text-purple-700">{scores.post !== null ? Number(scores.post.toFixed(2)) : "-"}</p>
+             <div className="bg-indigo-50 p-4 md:p-5 rounded-2xl border border-indigo-100 flex flex-col justify-center">
+                <p className="text-[10px] md:text-xs text-indigo-500 uppercase font-bold mb-1">Kuis Cerita</p>
+                <p className="text-2xl md:text-3xl font-bold text-indigo-700">{scores.quiz !== null ? Number(scores.quiz.toFixed(2)) : "-"}</p>
+             </div>
+             <div className="bg-purple-50 p-4 md:p-5 rounded-2xl border border-purple-100 flex flex-col justify-center">
+                <p className="text-[10px] md:text-xs text-purple-500 uppercase font-bold mb-1">Post-Test</p>
+                <p className="text-2xl md:text-3xl font-bold text-purple-700">{scores.post !== null ? Number(scores.post.toFixed(2)) : "-"}</p>
              </div>
           </div>
 

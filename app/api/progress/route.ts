@@ -185,16 +185,56 @@ export async function POST(req: Request) {
       },
     });
 
-    //Logika Badge (Contoh: jika baru saja tamat)
-    let newBadge = null;
-    if (isCompleted && existingProgress?.status !== "completed") {
-        newBadge = "Story Master"; 
+    //Logika Badge Otomatis (Hanya evaluasi jika user barusan menyelesaikan cerita)
+    const newlyEarnedBadges: any[] = [];
+    if (isCompleted || finalIntermezzoScore === 100) {
+      //1.Fetch seluruh progres user untuk kalkulasi statistik
+      const allUserProgress = await prisma.user_progress.findMany({
+        where: { user_id: userId }
+      });
+      
+      const completedStoriesCount = allUserProgress.filter(p => p.status === 'completed').length;
+      const perfectQuizzesCount = allUserProgress.filter(p => p.intermezzo_quiz_score === 100).length;
+      
+      const badgeConditions = [
+        { id: 'BADGE_QUIZ_01', condition: perfectQuizzesCount >= 1 },
+        { id: 'BADGE_STORY_01', condition: completedStoriesCount >= 1 },
+        { id: 'BADGE_STORY_03', condition: completedStoriesCount >= 3 },
+        { id: 'BADGE_STREAK_05', condition: perfectQuizzesCount >= 5 }
+      ];
+
+      //2. Fetch badge yang sudah dimiliki agar tidak double
+      const earnedBadges = await prisma.user_badges.findMany({
+        where: { user_id: userId },
+        include: { badges: true }
+      });
+      const earnedBadgeIds = earnedBadges.map(b => b.badge_id);
+
+      //3. Berikan badge baru jika syarat terpenuhi
+      for (const badge of badgeConditions) {
+        if (badge.condition && !earnedBadgeIds.includes(badge.id)) {
+          const { randomUUID } = require('crypto');
+          await prisma.user_badges.create({
+            data: {
+              id: randomUUID(),
+              user_id: userId,
+              badge_id: badge.id
+            }
+          });
+          
+          //Ambil detail badge untuk notifikasi di UI
+          const badgeDetails = await prisma.badges.findUnique({ where: { id: badge.id } });
+          if (badgeDetails) {
+            newlyEarnedBadges.push(badgeDetails);
+          }
+        }
+      }
     }
 
     return NextResponse.json({ 
         success: true, 
         data: progress,
-        newBadge 
+        newlyEarnedBadges 
     });
 
   } catch (error) {
