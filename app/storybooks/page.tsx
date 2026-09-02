@@ -62,7 +62,8 @@ export default function MyStorybooks() {
           lastRead: formatDate(p.updated_at),
           image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
           certificateImage: p.stories.certificate_image,
-          quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : 0
+          quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : 0,
+          postScore: p.post_test_score !== null ? Number(p.post_test_score.toFixed(2)) : 0
         })));
       }
     } catch (e) {
@@ -74,10 +75,11 @@ export default function MyStorybooks() {
 
   //Fungsi Konversi Nilai kuis ke Predikat
   const getPredicate = (score: number) => {
-    if (score >= 90) return { grade: "A", label: "Sangat Baik", color: "text-green-600" };
-    if (score >= 80) return { grade: "B", label: "Baik", color: "text-blue-600" };
-    if (score >= 70) return { grade: "C", label: "Cukup", color: "text-yellow-600" };
-    return { grade: "D", label: "Kurang", color: "text-red-600" };
+    if (score >= 85) return { grade: "A", label: "Sangat Baik", color: "text-green-700" };
+    if (score >= 70) return { grade: "B", label: "Baik", color: "text-blue-700" };
+    if (score >= 55) return { grade: "C", label: "Cukup", color: "text-yellow-600" };
+    if (score >= 40) return { grade: "D", label: "Kurang", color: "text-orange-600" };
+    return { grade: "E", label: "Sangat Kurang", color: "text-red-700" };
   };
 
   //Fitur cetak bawaan browser
@@ -324,8 +326,13 @@ export default function MyStorybooks() {
                     </h2>
 
                     {/* DATA 2: PREDIKAT KUIS */}
-                    <div className={`pdf-grade absolute top-[61%] left-0 w-full transform -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${getPredicate(selectedCert.quizScore).color}`}>
-                      {getPredicate(selectedCert.quizScore).grade}
+                    <div className={`pdf-grade absolute top-[64%] left-[28%] transform -translate-x-1/2 -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${getPredicate(selectedCert.quizScore).color}`}>
+                      {selectedCert.quizScore} ({getPredicate(selectedCert.quizScore).grade})
+                    </div>
+
+                    {/* DATA 3: PREDIKAT POST-TEST */}
+                    <div className={`pdf-grade absolute top-[64%] left-[72%] transform -translate-x-1/2 -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${getPredicate(selectedCert.postScore).color}`}>
+                      {selectedCert.postScore} ({getPredicate(selectedCert.postScore).grade})
                     </div>
 
                   </div>

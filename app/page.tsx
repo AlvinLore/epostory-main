@@ -9,9 +9,7 @@ export default function Home() {
       <nav className="fixed top-0 w-full bg-white border-b border-gray-200 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-green-600 rounded-xl">
-              <span className="text-white font-bold text-lg">E</span>
-            </div>
+            <img src="/Logo EpoStory.png" alt="EpoStory" className="w-15 h-auto" />
             <span className="font-bold text-xl text-gray-900">EpoStory</span>
           </Link>
           <div className="flex items-center space-x-4">
@@ -50,28 +48,27 @@ export default function Home() {
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
-              <button className="px-8 py-3 border-2 border-green-600 text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors">
-                Learn More
-              </button>
+              <a href="#fitur" className="px-8 py-3 border-2 border-green-600 text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center justify-center">
+                Pelajari Lebih Lanjut
+              </a>
             </div>
           </div>
 
           {/* Right Illustration */}
           <div className="relative">
-            <div className="bg-gradient-to-br from-sky-200 to-emerald-100 rounded-2xl p-8 aspect-square flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🌍</div>
-                <p className="text-gray-700 font-semibold">
-                  Ilustrasi Edukatif EpoStory
-                </p>
-              </div>
+            <div className="aspect-square flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl">
+              <img 
+                src="/Ilustrasi-app.png" 
+                alt="Ilustrasi Edukatif EpoStory" 
+                className="w-full h-full object-cover animate-in fade-in duration-1000"
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-6 bg-gray-50">
+      <section id="fitur" className="py-20 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -171,81 +168,8 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="inline-flex items-center justify-center w-8 h-8 bg-green-600 rounded-lg">
-                <span className="text-white font-bold">E</span>
-              </div>
-              <span className="font-bold">EpoStory</span>
-            </div>
-            <p className="text-gray-400 text-sm">
-              Making environmental education engaging
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Product</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white">
-                  Features
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Chapters
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Pricing
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white">
-                  About
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white">
-                  Privacy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Terms
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Cookies
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
+      <footer className="bg-gray-900 text-white py-6 px-6">
+        <div className="border-gray-800 text-center text-gray-400 text-sm text-center">
           <p>&copy; 2026 EpoStory. All rights reserved.</p>
         </div>
       </footer>

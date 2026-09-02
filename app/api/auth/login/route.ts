@@ -7,9 +7,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
+    //Ubah email jadi huruf kecil semua untuk standardisasi
+    const normalizedEmail = email.toLowerCase();
+
     //Search berdasarkan email
     const user = await prisma.users.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     });
 
     //User tidak ditemukan

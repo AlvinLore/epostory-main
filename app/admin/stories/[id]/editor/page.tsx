@@ -380,14 +380,12 @@ export default function StoryEditor() {
   return (
     <AdminRoute>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
-        <div className="hidden md:block">
-            <AdminSidebar />
-        </div>
+        <AdminSidebar />
 
         <main className="flex-1 md:ml-64 flex flex-col h-screen w-full">
           
           {/* HEADER */}
-          <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm z-20 shrink-0">
+          <div className="bg-white border-b border-gray-200 pl-16 pr-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm z-20 shrink-0">
             <div className="flex flex-col w-full md:w-auto">
               <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold flex items-center gap-1">
                  Story Editor <ChevronRight className="w-3 h-3"/> {activeMode}

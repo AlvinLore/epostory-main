@@ -54,24 +54,9 @@ export default function LoginPage() {
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full opacity-5"></div>
         </div>
         <div className="relative z-10 text-center px-8">
-          <div className="mb-8">
-            <svg
-              viewBox="0 0 200 200"
-              className="w-40 h-40 mx-auto text-white opacity-90"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              {/* Logo */}
-              <circle cx="100" cy="60" r="30" />
-              <path d="M 60 120 Q 50 100 60 80" />
-              <path d="M 140 120 Q 150 100 140 80" />
-              <rect x="30" y="140" width="40" height="50" />
-              <rect x="130" y="150" width="40" height="40" />
-              <line x1="20" y1="190" x2="180" y2="190" strokeWidth="2" />
-            </svg>
+          <div className="w-48 h-auto bg-white/10 rounded-[3rem] flex items-center justify-center p-6 mb-8 mx-auto shadow-2xl backdrop-blur-sm border border-white/20">
+            <img src="/Logo EpoStory.png" alt="EpoStory" className="w-full h-full object-contain drop-shadow-xl" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-4">EpoStory</h1>
           <p className="text-lg text-white text-opacity-90">
             Learn through interactive environmental stories
           </p>
@@ -82,55 +67,17 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6 py-12">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-green-600 mb-2">EpoStory</h1>
-            <p className="text-sm text-gray-600">
-              Learn through interactive stories
-            </p>
+          <div className="lg:hidden text-center mb-1 flex flex-col items-center">
+            <img src="/Logo EpoStory.png" alt="EpoStory" className="w-32 h-auto mb-2 drop-shadow-sm" />
           </div>
 
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            {/* Logo */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-600 rounded-xl mb-4">
-                <span className="text-white font-bold text-lg">E</span>
-              </div>
-            </div>
 
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
               Selamat Datang di EpoStory
             </h2>
             <p className="text-center text-gray-600 mb-8">Masuk ke akun anda</p>
-
-            {/* Info Demo */}
-            <div className="space-y-3 mb-6">
-              {/* Akun User */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs font-semibold text-blue-900 mb-2">
-                  Learner Dummy Account:
-                </p>
-                <p className="text-xs text-blue-800">
-                  Email: <span className="font-mono font-bold">demo@epostory.com</span>
-                </p>
-                <p className="text-xs text-blue-800">
-                  Password: <span className="font-mono font-bold">demo123</span>
-                </p>
-              </div>
-
-              {/* Akun Admin */}
-              <div className="bg-green-50 border border-green-600 rounded-lg p-3">
-                <p className="text-xs font-semibold text-green-600 mb-2">
-                  Admin Dummy Account:
-                </p>
-                <p className="text-xs text-green-600">
-                  Email: <span className="font-mono font-bold">admin@epostory.com</span>
-                </p>
-                <p className="text-xs text-green-600">
-                  Password: <span className="font-mono font-bold">admin123</span>
-                </p>
-              </div>
-            </div>
 
             {/* Pesan Error */}
             {error && (

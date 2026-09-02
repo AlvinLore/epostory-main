@@ -15,9 +15,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Password minimal 8 karakter" }, { status: 400 });
     }
 
+    //Ubah email jadi huruf kecil semua
+    const normalizedEmail = email.toLowerCase();
+
     //Validasi email
     const existingUser = await prisma.users.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     });
 
     if (existingUser) {
@@ -34,7 +37,7 @@ export async function POST(request: Request) {
     const userData: any = {
       id: `usr_${Date.now()}`,
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: 'user', //default
     };

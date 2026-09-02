@@ -71,14 +71,12 @@ export function AdminSidebar() {
             onClick={() => setIsOpen(false)}
           >
             <div className="flex items-center gap-3">
-                 <div className="inline-flex items-center justify-center w-10 h-10 bg-green-600 rounded-lg group-hover:bg-green-500 transition-colors shadow-lg shadow-green-900/20">
-                    <span className="font-bold text-lg">E</span>
-                 </div>
-                 <div>
-                    <div className="text-lg font-bold text-white leading-none">EpoStory</div>
-                    <div className="text-xs text-gray-400 mt-1">Admin Panel</div>
-                 </div>
-            </div>
+                <img src="/Logo EpoStory.png" alt="EpoStory Logo" className="w-10 h-auto rounded-xl" />
+                <div>
+                  <div className="text-lg font-bold text-white leading-none">EpoStory</div>
+                  <div className="text-xs text-gray-400 mt-1">Admin Panel</div>
+                </div>
+              </div>
           </Link>
         </div>
 

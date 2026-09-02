@@ -21,14 +21,12 @@ export function Sidebar() {
       <aside className="hidden md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:bg-white md:border-r md:border-gray-200 md:shadow-sm md:flex md:flex-col z-50">
         
         {/* Header */}
-        <div className="px-6 py-8 flex-shrink-0">
+        <div className="px-6 py-4 flex-shrink-0">
           <Link href="/dashboard" className="inline-block group">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-xl group-hover:bg-green-700 transition-colors shadow-sm">
-                <span className="text-white font-bold text-lg">E</span>
+              <div className="flex items-center gap-3">
+                <img src="/Logo EpoStory.png" alt="EpoStory Logo" className="w-15 h-auto" />
+                <div className="text-lg font-bold text-gray-900">EpoStory</div>
               </div>
-              <div className="text-lg font-bold text-gray-900">EpoStory</div>
-            </div>
           </Link>
         </div>
 
