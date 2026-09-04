@@ -5,9 +5,9 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, gender } = body;
+    const { name, email, password, gender, school, semester } = body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !school || !semester) {
       return NextResponse.json({ success: false, message: "Semua data wajib diisi" }, { status: 400 });
     }
 
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
       name,
       email: normalizedEmail,
       password: hashedPassword,
+      school,
+      semester: parseInt(semester, 10),
       role: 'user', //default
     };
 

@@ -18,7 +18,8 @@ export default function ProfileSettings() {
     fullName: "Learner",
     email: "learner@example.com",
     gender: "",
-    school: ""
+    school: "",
+    semester: ""
   });
 
   // State form ganti password
@@ -39,7 +40,8 @@ export default function ProfileSettings() {
         fullName: user.name || "Learner",
         email: user.email || "learner@example.com",
         gender: user.gender || "",
-        school: user.school || ""
+        school: user.school || "",
+        semester: user.semester ? String(user.semester) : ""
       }));
     }
   }, [user]);
@@ -47,8 +49,19 @@ export default function ProfileSettings() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const handleSaveProfile = async () => {
+    // Validasi Semester
+    let parsedSemester: number | null = null;
+    if (formData.semester && String(formData.semester).trim() !== "") {
+      const sem = parseInt(String(formData.semester), 10);
+      if (sem < 1 || sem > 14) {
+        toast.error("Validasi Gagal", { description: "Semester harus berada di antara 1 hingga 14." });
+        return;
+      }
+      parsedSemester = sem;
+    }
+
     setIsSavingProfile(true);
-    const success = await updateProfile(formData.fullName, formData.gender, formData.school);
+    const success = await updateProfile(formData.fullName, formData.gender, formData.school, parsedSemester);
     if (success) {
       toast.success("Profile Updated", {
         description: "Perubahanmu sukses disimpan."
@@ -165,6 +178,10 @@ export default function ProfileSettings() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Sekolah / Institusi</label>
                     <Input placeholder="Opsional (Contoh: STIS)" value={formData.school} onChange={(e) => setFormData({...formData, school: e.target.value})} className="rounded-lg border-gray-300" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+                    <Input type="number" min="1" max="14" placeholder="Contoh: 3" value={formData.semester} onChange={(e) => setFormData({...formData, semester: e.target.value})} className="rounded-lg border-gray-300" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>

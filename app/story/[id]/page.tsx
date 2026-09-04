@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Lightbulb, BookOpen, AlertCircle, FileText, Loader2 } from "lucide-react";
@@ -53,6 +53,9 @@ export default function SmartStoryPlayer() {
   
   //Track Kuis Selesai - Disimpan sebagai Record opsi yang dipilih
   const [answeredQuizzes, setAnsweredQuizzes] = useState<Record<string, string>>({});
+
+  //Referensi untuk autoscroll feedback
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   //MENARIK DATA CERITA & PROGRESS DARI DATABASE
   useEffect(() => {
@@ -242,6 +245,15 @@ export default function SmartStoryPlayer() {
     }
   }, [currentChapterIndex, currentPageIndex, answeredQuizzes, storyData]);
 
+  //Efek Autoscroll untuk Feedback Kuis
+  useEffect(() => {
+    if (inlineQuizFeedback && feedbackRef.current) {
+        setTimeout(() => {
+            feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100); // Sedikit delay agar DOM selesai dirender
+    }
+  }, [inlineQuizFeedback]);
+
   //LOGIC HANDLERS UNTUK TES PRE/POST
   const handleTestSubmit = async (type: "pre" | "post") => {
     const questions = type === "pre" ? storyData.preTest : storyData.postTest;
@@ -315,6 +327,35 @@ export default function SmartStoryPlayer() {
     }
 
     if (isFinished) {
+      //VALIDASI TOTAL: Cek apakah ada kuis di masa lalu yang terlewat
+        let hasUnansweredQuiz = false;
+        let targetCh = -1;
+        let targetPg = -1;
+
+        for (let c = 0; c < storyData.chapters.length; c++) {
+            for (let p = 0; p < storyData.chapters[c].pages.length; p++) {
+                const pg = storyData.chapters[c].pages[p];
+                if (pg.type === 'quiz' && answeredQuizzes[pg.id] === undefined) {
+                    hasUnansweredQuiz = true;
+                    targetCh = c;
+                    targetPg = p;
+                    break;
+                }
+            }
+            if (hasUnansweredQuiz) break;
+        }
+
+        if (hasUnansweredQuiz) {
+            toast.error("Tidak Bisa Menyelesaikan Cerita", {
+                description: "Terdapat kuis baru yang belum Anda jawab di bagian sebelumnya. Mengalihkan..."
+            });
+            //Lempar mundur pengguna ke kuis yang belum dijawab
+            setCurrentChapterIndex(targetCh);
+            setCurrentPageIndex(targetPg);
+            saveProgressToDB(phase, targetCh, targetPg, scores, answeredQuizzes);
+            return;
+        }
+
         toast.info("Semua Chapter Selesai! Melanjutkan ke Post-Test...");
         const nextPhase: GlobalPhase = storyData.postTest.length > 0 ? "post-test" : "completed";
         
@@ -562,7 +603,7 @@ export default function SmartStoryPlayer() {
                                       //Jika Admin sudah menghapus opsi ini dari database, jangan render kotak feedback
                                       if (!selectedOpt) return null;
                                       return (
-                                          <div className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
+                                          <div ref={feedbackRef} className={`mt-6 p-5 rounded-xl border text-sm animate-in slide-in-from-bottom-2 ${
                                               inlineQuizFeedback === 'correct'
                                               ? 'bg-green-50 border-green-200 text-green-900' 
                                               : 'bg-red-50 border-red-200 text-red-900'

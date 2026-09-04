@@ -17,7 +17,9 @@ export default function SignupPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    gender: ""
+    gender: "",
+    school: "",
+    semester: ""
   });
   
   const [activeField, setActiveField] = useState<string | null>(null);
@@ -31,12 +33,17 @@ export default function SignupPage() {
     setError("");
 
     //Validasi dasar
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password || !formData.school || !formData.semester) {
       setError("Harap isi semua kolom wajib.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
       setError("Password dan Konfirmasi Password tidak cocok.");
+      return;
+    }
+    const sem = parseInt(formData.semester, 10);
+    if (sem < 1 || sem > 14) {
+      setError("Semester harus berada di antara 1 hingga 14.");
       return;
     }
 
@@ -47,7 +54,9 @@ export default function SignupPage() {
         formData.name,
         formData.email,
         formData.password,
-        formData.gender
+        formData.gender,
+        formData.school,
+        parseInt(formData.semester, 10)
       );
 
       if (isSuccess) {
@@ -161,6 +170,35 @@ export default function SignupPage() {
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asal Sekolah</label>
+                  <Input
+                    type="text"
+                    placeholder="Nama Sekolah"
+                    value={formData.school}
+                    onChange={(e) => setFormData({...formData, school: e.target.value})}
+                    onFocus={() => setActiveField("school")}
+                    onBlur={() => setActiveField(null)}
+                    className={activeField === "school" ? "border-emerald-500 ring-2 ring-emerald-200" : ""}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="14"
+                    placeholder="Contoh: 3"
+                    value={formData.semester}
+                    onChange={(e) => setFormData({...formData, semester: e.target.value})}
+                    onFocus={() => setActiveField("semester")}
+                    onBlur={() => setActiveField(null)}
+                    className={activeField === "semester" ? "border-emerald-500 ring-2 ring-emerald-200" : ""}
+                  />
                 </div>
               </div>
 

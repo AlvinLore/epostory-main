@@ -79,14 +79,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       for (let i = 0; i < chapters.length; i++) {
         const ch = chapters[i];
         const newChapter = await tx.chapters.create({
-          data: { id: `ch_${Date.now()}_${i}`, story_id: id, title: ch.title, order_index: i }
+          data: { id: ch.id || `ch_${Date.now()}_${i}`, story_id: id, title: ch.title, order_index: i }
         });
 
         for (let j = 0; j < ch.pages.length; j++) {
           const p = ch.pages[j];
           const newPage = await tx.pages.create({
             data: {
-              id: `pg_${Date.now()}_${j}`, chapter_id: newChapter.id, type: p.type, title: p.title,
+              id: p.id || `pg_${Date.now()}_${j}`, chapter_id: newChapter.id, type: p.type, title: p.title,
               content: p.content, image: p.image, order_index: j
             }
           });
@@ -95,11 +95,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             for (let k = 0; k < p.quizOptions.length; k++) {
               await tx.page_quiz_options.create({
                 data: { 
-                  id: `pqo_${Date.now()}_${k}`, 
+                  id: p.quizOptions[k].id || `pqo_${Date.now()}_${j}_${k}`, 
                   page_id: newPage.id, 
                   text: p.quizOptions[k].text, 
                   feedback: p.quizOptions[k].feedback,
-                  is_correct: p.quizAns === k
+                  is_correct: p.quizAns === (p.quizOptions[k].id || k) || p.quizAns === k // Kompatibilitas dengan index kuis lama
                 }
               });
             }
@@ -117,7 +117,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const asm = allAssessments[i];
         const newAsm = await tx.test_items.create({
           data: { 
-            id: `ti_${Date.now()}_${i}`, 
+            id: asm.id || `ti_${Date.now()}_${i}`, 
             story_id: id, 
             type: asm.type as any,
             question: asm.question
@@ -127,7 +127,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         for (let j = 0; j < asm.options.length; j++) {
           await tx.test_options.create({
             data: { 
-              id: `to_${Date.now()}_${j}`, 
+              id: asm.options[j].id || `to_${Date.now()}_${i}_${j}`, 
               test_item_id: newAsm.id, 
               text: asm.options[j].text, 
               is_correct: asm.options[j].isCorrect 

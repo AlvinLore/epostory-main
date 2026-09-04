@@ -11,15 +11,16 @@ interface User {
   role: "user" | "admin";
   gender?: string;
   school?: string | null;
+  semester?: number | null;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; role?: string }>;
-  signup: (name: string, email: string, password: string, gender: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, gender: string, school: string, semester: number) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (name: string, gender: string, school: string) => Promise<boolean>;
+  updateProfile: (name: string, gender: string, school: string, semester?: number | null) => Promise<boolean>;
   changePassword: (current: string, newPass: string) => Promise<boolean>;
 }
 
@@ -72,12 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   //Fungsi Signup (Register)
-  const signup = async (name: string, email: string, password: string, gender: string): Promise<boolean> => {
+  const signup = async (name: string, email: string, password: string, gender: string, school: string, semester: number): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, gender }),
+        body: JSON.stringify({ name, email, password, gender, school, semester }),
       });
 
       const result = await res.json();
@@ -104,13 +105,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   //Fungsi Update Profil
-  const updateProfile = async (name: string, gender: string, school: string): Promise<boolean> => {
+  const updateProfile = async (name: string, gender: string, school: string, semester?: number | null): Promise<boolean> => {
     if (!user) return false;
     try {
+      const payload: any = { id: user.id, name, gender, school };
+      if (semester !== undefined) payload.semester = semester;
+      
       const res = await fetch("/api/auth/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: user.id, name, gender, school }),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
       
@@ -120,7 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       //Perbarui state lokal & localStorage
-      const updatedUser = { ...user, name, gender, school };
+      const updatedUser: any = { ...user, name, gender, school };
+      if (semester !== undefined) updatedUser.semester = semester;
       setUser(updatedUser);
       localStorage.setItem("epostory_user", JSON.stringify(updatedUser));
 

@@ -40,8 +40,8 @@ export default function MyStorybooks() {
       if (result.success) {
         const progresses = result.data;
         
-        const continues = progresses.filter((p: any) => p.status !== 'completed' && p.stories);
-        const completeds = progresses.filter((p: any) => p.status === 'completed' && p.stories);
+        const continues = progresses.filter((p: any) => p.status !== 'completed' && p.stories && p.stories.status === 'published');
+        const completeds = progresses.filter((p: any) => p.status === 'completed' && p.stories && p.stories.status === 'published');
 
         const formatDate = (dateStr: string) => {
           return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -62,8 +62,8 @@ export default function MyStorybooks() {
           lastRead: formatDate(p.updated_at),
           image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
           certificateImage: p.stories.certificate_image,
-          quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : 0,
-          postScore: p.post_test_score !== null ? Number(p.post_test_score.toFixed(2)) : 0
+          quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : null,
+          postScore: p.post_test_score !== null ? Number(p.post_test_score.toFixed(2)) : null
         })));
       }
     } catch (e) {
@@ -93,8 +93,13 @@ export default function MyStorybooks() {
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           /* Menyembunyikan semua elemen selain sertifikat */
-          body * { visibility: hidden; }
-          #certificate-container, #certificate-container * { visibility: visible; }
+          aside, main, .no-print { 
+            display: none !important; 
+          }
+          
+          #certificate-container, #certificate-container * { 
+            visibility: visible; 
+          }
 
           /* Atur kertas ke A4 Landscape mutlak */
           @page { 
@@ -105,17 +110,18 @@ export default function MyStorybooks() {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important; /* Mencegah munculnya halaman kosong kedua */
           }
 
           /* Kunci Ukuran */
           #certificate-container { 
-            position: fixed !important; 
+            position: absolute !important; 
             left: 0 !important; 
             top: 0 !important; 
-            width: 100vw !important;
-            height: 100vh !important;
+            width: 100% !important;
+            height: 100% !important;
             max-width: none !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -127,8 +133,8 @@ export default function MyStorybooks() {
 
           /* Tidak membiarkan ruang kosong */
           #certificate-container img {
-            width: 100vw !important;
-            height: 100vh !important;
+            width: 100% !important;
+            height: 100% !important;
             object-fit: cover !important; 
           }
           
@@ -136,7 +142,7 @@ export default function MyStorybooks() {
             font-size: 2rem !important; /* Ukuran nama PDF */
           }
           #certificate-container .pdf-grade {
-            font-size: 3.5rem !important; /* Ukuran predikat PDF */
+            font-size: 2rem !important; /* Ukuran predikat PDF */
           }
           
           .no-print { display: none !important; }
@@ -248,7 +254,16 @@ export default function MyStorybooks() {
                   {completedStories.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {completedStories.map((story) => {
-                        const pred = getPredicate(story.quizScore);
+                        let avgScore: number | null = null;
+                        if (story.quizScore !== null && story.postScore !== null) {
+                            avgScore = Math.round((story.quizScore + story.postScore) / 2);
+                        } else if (story.quizScore !== null) {
+                            avgScore = Math.round(story.quizScore);
+                        } else if (story.postScore !== null) {
+                            avgScore = Math.round(story.postScore);
+                        }
+                        const pred = avgScore !== null ? getPredicate(avgScore) : null;
+
                         return (
                           <div key={story.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col">
                             <div className="relative h-40">
@@ -260,9 +275,15 @@ export default function MyStorybooks() {
                             </div>
                             <div className="p-5 flex-1 flex flex-col">
                               <h3 className="font-bold text-lg text-gray-900 mb-1">{story.title}</h3>
-                              <p className="text-sm text-gray-500 mb-4 flex-1">
-                                Nilai Kuis: <span className={`font-bold ${pred.color}`}>{story.quizScore} (Predikat {pred.grade})</span>
-                              </p>
+                              {avgScore !== null && pred !== null ? (
+                                  <p className="text-sm text-gray-500 mb-4 flex-1">
+                                    Rata-rata Nilai: <span className={`font-bold ${pred.color}`}>{avgScore} (Predikat {pred.grade})</span>
+                                  </p>
+                              ) : (
+                                  <p className="text-sm text-gray-400 mb-4 flex-1 italic">
+                                    Tidak ada evaluasi nilai
+                                  </p>
+                              )}
                               
                               <Button 
                                 onClick={() => setSelectedCert(story)}
@@ -325,15 +346,25 @@ export default function MyStorybooks() {
                       {user?.name || "Nama Responden"}
                     </h2>
 
-                    {/* DATA 2: PREDIKAT KUIS */}
-                    <div className={`pdf-grade absolute top-[64%] left-[28%] transform -translate-x-1/2 -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${getPredicate(selectedCert.quizScore).color}`}>
-                      {selectedCert.quizScore} ({getPredicate(selectedCert.quizScore).grade})
-                    </div>
-
-                    {/* DATA 3: PREDIKAT POST-TEST */}
-                    <div className={`pdf-grade absolute top-[64%] left-[72%] transform -translate-x-1/2 -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${getPredicate(selectedCert.postScore).color}`}>
-                      {selectedCert.postScore} ({getPredicate(selectedCert.postScore).grade})
-                    </div>
+                    {/* DATA 2: PREDIKAT KESELURUHAN */}
+                    {(() => {
+                      let avgScore: number | null = null;
+                      if (selectedCert.quizScore !== null && selectedCert.postScore !== null) {
+                          avgScore = Math.round((selectedCert.quizScore + selectedCert.postScore) / 2);
+                      } else if (selectedCert.quizScore !== null) {
+                          avgScore = Math.round(selectedCert.quizScore);
+                      } else if (selectedCert.postScore !== null) {
+                          avgScore = Math.round(selectedCert.postScore);
+                      }
+                      
+                      if (avgScore === null) return null; // Jangan tampilkan teks apapun jika tidak ada nilai
+                      const pred = getPredicate(avgScore);
+                      return (
+                        <div className={`pdf-grade absolute top-[63%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-center text-sm sm:text-base md:text-2xl lg:text-3xl font-bold font-serif leading-none ${pred.color}`}>
+                          {pred.label} ({pred.grade})
+                        </div>
+                      );
+                    })()}
 
                   </div>
                 </div>

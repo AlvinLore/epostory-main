@@ -26,7 +26,7 @@ interface StoryPage {
   title: string;
   content: string;
   image?: string | null; 
-  quizOptions?: { text: string; feedback: string }[];
+  quizOptions?: { id?: string; text: string; feedback: string }[];
   quizAns?: number;
 }
 
@@ -107,7 +107,7 @@ export default function StoryEditor() {
               pages: c.pages.map((p: any) => ({
                 id: p.id, type: p.type, title: p.title, content: p.content || "", image: p.image,
                 quizAns: p.type === 'quiz' ? p.page_quiz_options.findIndex((qo: any) => qo.is_correct) : undefined,
-                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ text: qo.text, feedback: qo.feedback || "" })) : undefined
+                quizOptions: p.type === 'quiz' ? p.page_quiz_options.map((qo: any) => ({ id: qo.id, text: qo.text, feedback: qo.feedback || "" })) : undefined
               }))
             }))
           });
@@ -237,7 +237,8 @@ export default function StoryEditor() {
   };
 
   const handleAddChapter = () => {
-    const newChapter: Chapter = { id: Date.now().toString(), title: `Chapter ${story.chapters.length + 1}`, pages: [] };
+    const newIdx = story.chapters.length;
+    const newChapter: Chapter = { id: `ch_${Date.now()}_${newIdx}`, title: `Chapter ${newIdx + 1}`, pages: [] };
     setStory({ ...story, chapters: [...story.chapters, newChapter] });
     setActiveChapterId(newChapter.id); setActiveMode("chapter"); setActivePageId(null); setMobileTab("list");
   };
@@ -250,9 +251,17 @@ export default function StoryEditor() {
   };
 
   const handleAddTestQuestion = (target: "pre" | "post") => {
+    const listLength = target === "pre" ? story.preTest.length : story.postTest.length;
+    const timestamp = Date.now();
     const newQ: TestItem = {
-      id: Date.now().toString(), question: "",
-      options: [ { id: "0", text: "", isCorrect: true }, { id: "1", text: "", isCorrect: false }, { id: "2", text: "", isCorrect: false }, { id: "3", text: "", isCorrect: false }, { id: "4", text: "", isCorrect: false } ]
+      id: `ti_${timestamp}_${listLength}`, question: "",
+      options: [ 
+          { id: `to_${timestamp}_${listLength}_0`, text: "", isCorrect: true }, 
+          { id: `to_${timestamp}_${listLength}_1`, text: "", isCorrect: false }, 
+          { id: `to_${timestamp}_${listLength}_2`, text: "", isCorrect: false }, 
+          { id: `to_${timestamp}_${listLength}_3`, text: "", isCorrect: false }, 
+          { id: `to_${timestamp}_${listLength}_4`, text: "", isCorrect: false } 
+      ]
     };
     if (target === "pre") setStory({ ...story, preTest: [...story.preTest, newQ] });
     else setStory({ ...story, postTest: [...story.postTest, newQ] });
@@ -308,15 +317,20 @@ export default function StoryEditor() {
     }
 
     if (confirm(`Salin semua soal dari ${sourceName} ke ${targetName}? Soal akan ditambahkan ke bagian bawah daftar saat ini.`)) {
-      // Kita harus membuat ID baru yang unik untuk setiap soal dan opsi agar tidak bentrok di database
-      const copiedQuestions: TestItem[] = sourceList.map(q => ({
-        ...q,
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-        options: q.options.map(opt => ({
-          ...opt,
-          id: Date.now().toString() + Math.random().toString(36).substring(2, 9)
-        }))
-      }));
+      // Harus membuat ID baru yang unik untuk setiap soal dan opsi agar tidak bentrok di database
+      const targetLength = source === "pre" ? story.postTest.length : story.preTest.length;
+      const timestamp = Date.now();
+      const copiedQuestions: TestItem[] = sourceList.map((q, idx) => {
+        const qIdx = targetLength + idx;
+        return {
+          ...q,
+          id: `ti_${timestamp}_${qIdx}`,
+          options: q.options.map((opt, oIdx) => ({
+            ...opt,
+            id: `to_${timestamp}_${qIdx}_${oIdx}`
+          }))
+        };
+      });
 
       if (source === "pre") {
         setStory({ ...story, postTest: [...story.postTest, ...copiedQuestions] });
@@ -330,9 +344,18 @@ export default function StoryEditor() {
 
   const handleAddPage = (type: "story" | "quiz") => {
     if (!activeChapterId) return;
+    const currentChapter = story.chapters.find(c => c.id === activeChapterId);
+    const newPageIdx = currentChapter ? currentChapter.pages.length : 0;
+    const timestamp = Date.now();
     const newPage: StoryPage = {
-      id: Date.now().toString(), type, title: type === "story" ? "Halaman Baru" : "Kuis Baru", content: "", image: null,
-      quizOptions: type === 'quiz' ? [ { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" }, { text: "", feedback: "" } ] : undefined,
+      id: `pg_${timestamp}_${newPageIdx}`, type, title: type === "story" ? "Halaman Baru" : "Kuis Baru", content: "", image: null,
+      quizOptions: type === 'quiz' ? [ 
+          { id: `pqo_${timestamp}_${newPageIdx}_0`, text: "", feedback: "" }, 
+          { id: `pqo_${timestamp}_${newPageIdx}_1`, text: "", feedback: "" }, 
+          { id: `pqo_${timestamp}_${newPageIdx}_2`, text: "", feedback: "" }, 
+          { id: `pqo_${timestamp}_${newPageIdx}_3`, text: "", feedback: "" }, 
+          { id: `pqo_${timestamp}_${newPageIdx}_4`, text: "", feedback: "" } 
+      ] : undefined,
       quizAns: type === 'quiz' ? 0 : undefined
     };
     setStory(prev => ({

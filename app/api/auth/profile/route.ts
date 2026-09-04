@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, gender, school } = body;
+    const { id, name, gender, school, semester } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, message: "ID User diperlukan" }, { status: 400 });
@@ -14,6 +14,9 @@ export async function PUT(request: Request) {
     if (name !== undefined) dataToUpdate.name = name;
     if (gender !== undefined) dataToUpdate.gender = gender;
     if (school !== undefined) dataToUpdate.school = school;
+    if (semester !== undefined) {
+      dataToUpdate.semester = semester === null ? null : parseInt(semester, 10);
+    }
     const updatedUser = await prisma.users.update({
       where: { id },
       data: dataToUpdate
