@@ -19,7 +19,8 @@ export default function SignupPage() {
     confirmPassword: "",
     gender: "",
     school: "",
-    semester: ""
+    semester: "",
+    website: ""
   });
   
   const [activeField, setActiveField] = useState<string | null>(null);
@@ -56,7 +57,8 @@ export default function SignupPage() {
         formData.password,
         formData.gender,
         formData.school,
-        parseInt(formData.semester, 10)
+        parseInt(formData.semester, 10),
+        formData.website
       );
 
       if (isSuccess) {
@@ -102,6 +104,18 @@ export default function SignupPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+            {/* HONEYPOT FIELD (Anti-Bot) - Jangan hapus atau ubah class 'hidden' */}
+              <div className="hidden" aria-hidden="true">
+                <label>Website</label>
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={formData.website}
+                  onChange={(e) => setFormData({...formData, website: e.target.value})}
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Pengguna</label>
                 <Input

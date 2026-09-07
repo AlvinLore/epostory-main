@@ -5,7 +5,12 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, gender, school, semester } = body;
+    const { name, email, password, gender, school, semester, website } = body;
+
+    //HONEYPOT: Jika kolom 'website' terisi, Blokir secara diam-diam kemungkinan bot
+    if (website && website.trim() !== "") {
+      return NextResponse.json({ success: false, message: "Aktivitas bot terdeteksi." }, { status: 403 });
+    }
 
     if (!name || !email || !password || !school || !semester) {
       return NextResponse.json({ success: false, message: "Semua data wajib diisi" }, { status: 400 });

@@ -18,7 +18,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; role?: string }>;
-  signup: (name: string, email: string, password: string, gender: string, school: string, semester: number) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, gender: string, school: string, semester: number, website?: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (name: string, gender: string, school: string, semester?: number | null) => Promise<boolean>;
   changePassword: (current: string, newPass: string) => Promise<boolean>;
@@ -73,12 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   //Fungsi Signup (Register)
-  const signup = async (name: string, email: string, password: string, gender: string, school: string, semester: number): Promise<boolean> => {
+  const signup = async (name: string, email: string, password: string, gender: string, school: string, semester: number, website: string = ""): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, gender, school, semester }),
+        body: JSON.stringify({ name, email, password, gender, school, semester, website }),
       });
 
       const result = await res.json();
