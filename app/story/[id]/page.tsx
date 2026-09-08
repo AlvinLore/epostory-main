@@ -447,14 +447,11 @@ export default function SmartStoryPlayer() {
             {currentQ.options.map((opt: string, idx: number) => (
                 <button
                 key={idx}
-                disabled={hasAnswered} 
                 onClick={() => setTestAnswers({...testAnswers, [testIndex]: idx})}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                     testAnswers[testIndex] === idx 
-                    ? "border-green-500 bg-green-50 text-green-700 font-bold" 
-                    : hasAnswered 
-                      ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" 
-                      : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+                    ? "border-green-500 bg-green-50 text-green-700 font-bold ring-2 ring-green-200 shadow-sm" 
+                    : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 >
                 {opt}
@@ -463,11 +460,11 @@ export default function SmartStoryPlayer() {
             </div>
 
             <Button 
-            className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg"
+            className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg shadow-md"
             disabled={!hasAnswered}
             onClick={() => isLast ? handleTestSubmit(type) : handleTestNext(type)}
             >
-            {isLast ? "Selesaikan Tes" : "Selanjutnya"}
+            {isLast ? "Selesaikan Tes" : "Simpan Jawaban & Lanjut"}
             </Button>
         </div>
       </div>
