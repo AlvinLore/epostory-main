@@ -44,6 +44,7 @@ export default function MyStorybooks() {
         const completeds = progresses.filter((p: any) => p.status === 'completed' && p.stories && p.stories.status === 'published');
 
         const formatDate = (dateStr: string) => {
+          if (!dateStr) return "-";
           return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         };
 
@@ -51,7 +52,7 @@ export default function MyStorybooks() {
           id: p.stories.id,
           title: p.stories.title,
           progress: p.progress_percentage || 0,
-          lastRead: formatDate(p.updated_at),
+          lastRead: formatDate(p.last_read_at),
           image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
         })));
 
@@ -59,7 +60,7 @@ export default function MyStorybooks() {
           id: p.stories.id,
           title: p.stories.title,
           progress: 100,
-          lastRead: formatDate(p.updated_at),
+          lastRead: formatDate(p.last_read_at),
           image: p.stories.cover_image || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
           certificateImage: p.stories.certificate_image,
           quizScore: p.intermezzo_quiz_score !== null ? Number(p.intermezzo_quiz_score.toFixed(2)) : null,
