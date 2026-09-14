@@ -55,17 +55,17 @@ export default function AdminAnalytics() {
     setHasSearched(true);
   };
 
-  // Logika Ekspor ke CSV
+  //Ekspor ke CSV
   const handleExportCSV = () => {
     if (filteredData.length === 0) return;
-    const headers = ["ID,Nama,Email,Gender,Cerita,Pre-Test,Nilai Kuis,Post-Test,N-Gain Score"];
-    // Mapping data ke baris CSV
+    const headers = ["ID,Nama,Email,Gender,Semester,Cerita,Pre-Test,Nilai Kuis,Post-Test,N-Gain Score"];
+    //Mapping data ke baris CSV
     const rows = filteredData.map(row => 
-      `${row.id},"${row.name}","${row.email}",${row.gender},"${row.storyTitle}",${row.preTest},${row.intermezzoScore},${row.postTest},${row.nGain}`
+      `${row.id},"${row.name}","${row.email}",${row.gender},${row.semester},"${row.storyTitle}",${row.preTest},${row.intermezzoScore},${row.postTest},${row.nGain}`
     );
-    // Menggabungkan header dan isi
+    //Menggabungkan header dan isi
     const csvContent = headers.concat(rows).join("\n");
-    // Membuat file dan memicu download
+    //Membuat file dan picu download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -154,6 +154,7 @@ export default function AdminAnalytics() {
                       <tr>
                         <th className="px-6 py-4">Nama Responden</th>
                         <th className="px-6 py-4">Gender</th>
+                        <th className="px-6 py-4 text-center">Semester</th>
                         <th className="px-6 py-4">Cerita</th>
                         <th className="px-6 py-4 text-center">Pre-Test</th>
                         <th className="px-6 py-4 text-center">Nilai Kuis</th>
@@ -170,6 +171,7 @@ export default function AdminAnalytics() {
                               <p className="text-xs text-gray-500">{row.email}</p>
                             </td>
                             <td className="px-6 py-4">{row.gender}</td>
+                            <td className="px-6 py-4 text-center font-medium">{row.semester}</td>
                             <td className="px-6 py-4 max-w-[200px] truncate" title={row.storyTitle}>{row.storyTitle}</td>
                             <td className="px-6 py-4 text-center text-orange-600 font-semibold">{row.preTest}</td>
                             <td className="px-6 py-4 text-center text-blue-600 font-semibold">{row.intermezzoScore}</td>
@@ -181,7 +183,7 @@ export default function AdminAnalytics() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-gray-500 font-medium">
+                          <td colSpan={8} className="px-6 py-12 text-center text-gray-500 font-medium">
                             Data tidak ditemukan dengan filter tersebut.
                           </td>
                         </tr>

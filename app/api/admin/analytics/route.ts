@@ -9,6 +9,7 @@ export async function GET() {
             name: true,
             email: true,
             gender: true,
+            semester: true,
           }
         },
         stories: {
@@ -26,6 +27,7 @@ export async function GET() {
         name: prog.users.name,
         email: prog.users.email,
         gender: prog.users.gender === 'L' ? 'Laki-laki' : (prog.users.gender === 'P' ? 'Perempuan' : 'Tidak Disebutkan'),
+        semester: prog.users.semester || '-',
         storyTitle: prog.stories.title,
         preTest: prog.pre_test_score !== null ? Number(prog.pre_test_score.toFixed(2)) : '-',
         postTest: prog.post_test_score !== null ? Number(prog.post_test_score.toFixed(2)) : '-',
