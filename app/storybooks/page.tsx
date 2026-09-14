@@ -198,33 +198,33 @@ export default function MyStorybooks() {
                   {continueStories.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {continueStories.map((story) => (
-                        <div key={story.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all group">
-                          <div className="relative h-48 overflow-hidden">
-                            <img src={story.image} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Link href={`/story/${story.id}`}>
-                                <Button className="bg-white text-gray-900 hover:bg-gray-100 gap-2 rounded-full">
-                                  <PlayCircle className="w-4 h-4"/> Lanjutkan
-                                </Button>
-                              </Link>
+                        <Link href={`/story/${story.id}`} key={story.id}>
+                          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
+                            <div className="relative h-48 overflow-hidden bg-gray-100">
+                              <img src={story.image} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                             </div>
-                          </div>
                           <div className="p-5">
-                            <h3 className="font-bold text-lg text-gray-900 mb-3">{story.title}</h3>
-                            <div className="space-y-2 mb-4">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-500 font-medium">Progress</span>
-                                <span className="text-indigo-600 font-bold">{story.progress}%</span>
+                              <h3 className="font-bold text-lg text-gray-900 line-clamp-1 mb-3 group-hover:text-indigo-600 transition-colors">{story.title}</h3>
+                              <div className="space-y-2 mb-4">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-500 font-medium">Progress</span>
+                                  <span className="text-indigo-600 font-bold">{story.progress}%</span>
+                                </div>
+                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full bg-indigo-600 rounded-full transition-all" style={{ width: `${story.progress}%` }}></div>
+                                </div>
                               </div>
-                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-600 rounded-full transition-all" style={{ width: `${story.progress}%` }}></div>
+                              <div className="flex items-center justify-between mt-2">
+                                <p className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Clock className="w-3 h-3"/> Terakhir: {story.lastRead}
+                                </p>
+                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
+                                  <PlayCircle className="w-5 h-5" />
+                                </div>
                               </div>
                             </div>
-                            <p className="text-xs text-gray-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3"/> Terakhir dibaca: {story.lastRead}
-                            </p>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   ) : (
