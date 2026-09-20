@@ -2,39 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   BookOpen,
   BarChart3,
   Settings,
-  LogOut,
   Menu,
   X,
   UserCircle,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Manajemen Cerita", path: "/admin/stories", icon: BookOpen },
   { label: "Analisis", path: "/admin/analytics", icon: BarChart3 },
   { label: "Pengaturan", path: "/admin/settings", icon: Settings },
-  { label: "Profil Admin", path: "/admin/profile", icon: UserCircle },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    router.push("/");
-    setIsOpen(false);
-  };
 
   return (
     <>
@@ -106,15 +95,26 @@ export function AdminSidebar() {
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="px-4 py-6 border-t border-gray-800">
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-3 w-full px-4 py-3 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-colors group"
+        {/* Link Profil */}
+        <div className="p-4 border-t border-gray-800">
+          <Link
+            href="/admin/profile"
+            onClick={() => setIsOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors border border-transparent",
+              pathname === "/admin/profile"
+                ? "bg-gray-800 text-green-400 border-gray-700"
+                : "hover:bg-gray-800 text-gray-400 hover:border-gray-700 hover:text-white"
+            )}
           >
-            <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Keluar</span>
-          </button>
+            <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
+              <UserCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-200">Profil Admin</p>
+              <p className="text-xs text-gray-500">Periksa Akun</p>
+            </div>
+          </Link>
         </div>
       </aside>
     </>
