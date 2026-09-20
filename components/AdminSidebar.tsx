@@ -47,7 +47,7 @@ export function AdminSidebar() {
       {/* SIDEBAR CONTAINER */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-0 h-[100dvh] w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out",
           // Logika Responsif: Geser keluar layar di mobile jika tertutup
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
