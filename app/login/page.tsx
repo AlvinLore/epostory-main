@@ -168,7 +168,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-xs text-gray-500 mt-8">
-            By logging in, you agree to our Terms of Service and Privacy Policy
+            Dengan mendaftar, Anda menyetujui bahwa data aktivitas dan hasil belajar Anda dapat digunakan semata-mata untuk keperluan penelitian.
           </p>
         </div>
       </div>
