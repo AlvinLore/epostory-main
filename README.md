@@ -1,4 +1,4 @@
-*EpoStory* adalah sistem pembelajaran buku cerita digital interaktif berbasis web yang mengintegrasikan metode **Digital Storytelling** dengan alur evaluasi terstruktur (*Pre-test*, Kuis Sela Materi, dan *Post-test*) serta elemen gamifikasi.
+**EpoStory** adalah sistem pembelajaran buku cerita digital interaktif berbasis web yang mengintegrasikan metode Digital Storytelling dengan alur evaluasi terstruktur (*Pre-test*, Kuis Sela Materi, dan *Post-test*) serta elemen gamifikasi.
 
 Aplikasi ini dirancang khusus untuk meningkatkan pemahaman siswa dan menyediakan kalkulasi otomatis rasio **N-Gain Score** guna mengukur efektivitas hasil belajar secara objektif.
 
@@ -20,7 +20,7 @@ Aplikasi ini dirancang khusus untuk meningkatkan pemahaman siswa dan menyediakan
 * **Manajemen Soal Evaluasi:** Kelola butir soal evaluasi khusus *Pre-test* dan *Post-test* beserta pilihan jawaban berganda.
 * **Analisis & Pemantauan Siswa:** Tabel analitik skor (*Pre-test*, *Post-test*, Kuis, dan *N-Gain*), dilengkapi filter pencarian dan fitur **Ekspor ke File CSV**.
 * **Manajemen Akun Admin:** Fasilitas penambahan admin pengelola baru melalui menu pengaturan.
-### 🛡️ 3. Performa Sistem
+### 3. Performa Sistem
 * **Database Transactions:** Menggunakan `prisma.$transaction` untuk menjamin konsistensi data saat pembuatan materi cerita relasional (Bab, Halaman, dan Soal) terhadap basis data MySQL.
 * **Responsive UI:** Antarmuka responsif pc dan mobile.
 ---
