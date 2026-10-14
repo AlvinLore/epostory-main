@@ -37,7 +37,7 @@ Aplikasi ini dirancang khusus untuk meningkatkan pemahaman siswa dan menyediakan
 * Server basis data MySQL
 
 ### 2. Kloning Repositori
-Kloning repository melalui link SSH github/gitlab
+Kloning repository melalui link HTTPS github/gitlab
 
 ### 3. Instalasi Dependensi
 ```bash
