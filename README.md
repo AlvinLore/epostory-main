@@ -1,3 +1,83 @@
+*EpoStory* adalah sistem pembelajaran buku cerita digital interaktif berbasis web yang mengintegrasikan metode **Digital Storytelling** dengan alur evaluasi terstruktur (*Pre-test*, Kuis Sela Materi, dan *Post-test*) serta elemen gamifikasi.
+
+Aplikasi ini dirancang khusus untuk meningkatkan pemahaman siswa dan menyediakan kalkulasi otomatis rasio **N-Gain Score** guna mengukur efektivitas hasil belajar secara objektif.
+
+---
+## ✨ Fitur Utama
+### 1. Panel User
+* **Digital Story Reader:** Membaca materi cerita bab demi bab yang dilengkapi ilustrasi visual serta kuis interaktif di sela materi (*intermezzo quiz*).
+* **Alur Evaluasi Terstruktur:**
+  * **Pre-test:** Mengukur pemahaman awal sebelum materi cerita terbuka.
+  * **Post-test:** Menguji retensi pemahaman setelah materi selesai dibaca.
+  * **Kalkulasi Otomatis N-Gain:** Menghitung skor efektivitas belajar secara *real-time* di *backend* dengan perlindungan terhadap *division by zero*.
+* **Gamifikasi & Pencapaian:**
+  * Koleksi **Lencana (*Badges*)** berdasarkan pencapaian dan nilai siswa.
+  * **Sertifikat Digital:** Otomatisasi penerbitan sertifikat kelulusan dalam format PDF setelah menyelesaikan cerita.
+* **Dasbor & Riwayat Progres:** Memantau status bacaan ("Belum Selesai" & "Tamat").
+### 2. Panel Admin
+* **Story Builder & Editor:** Manajemen cerita lengkap (Metadata, Pengaturan Cover dan Sertifikat, Status Draft/Published).
+* **Manajemen Bab, Halaman & Kuis:** Penyusunan konten teks bacaan, unggahan ilustrasi, dan pembuatan kuis interaktif dengan umpan balik langsung (*intermediate feedback*).
+* **Manajemen Soal Evaluasi:** Kelola butir soal evaluasi khusus *Pre-test* dan *Post-test* beserta pilihan jawaban berganda.
+* **Analisis & Pemantauan Siswa:** Tabel analitik skor (*Pre-test*, *Post-test*, Kuis, dan *N-Gain*), dilengkapi filter pencarian dan fitur **Ekspor ke File CSV**.
+* **Manajemen Akun Admin:** Fasilitas penambahan admin pengelola baru melalui menu pengaturan.
+### 🛡️ 3. Performa Sistem
+* **Database Transactions:** Menggunakan `prisma.$transaction` untuk menjamin konsistensi data saat pembuatan materi cerita relasional (Bab, Halaman, dan Soal) terhadap basis data MySQL.
+* **Responsive UI:** Antarmuka responsif pc dan mobile.
+---
+## Arsitektur & Teknologi
+* **Frontend:** Next.js dan Tailwind CSS.
+* **Backend:** Next.js Serverless API Routes (`app/api/`).
+* **Database & ORM:** MySQL via Prisma ORM.
+* **Cloud Storage:** Cloudinary (https://cloudinary.com/) untuk Penyimpanan gambar sampul, ilustrasi halaman cerita, dan aset sertifikat.
+* **Autentikasi & Sesi:** Hashing sandi menggunakan `bcryptjs` dan manajemen sesi berbasis klien via `LocalStorage` & React Context.
+---
+# Panduan Memulai
+### 1. Prasyarat Sistem
+* Node.js (versi 18.18 atau lebih baru)
+* Server basis data MySQL
+
+### 2. Kloning Repositori
+Kloning repository melalui link SSH github/gitlab
+
+### 3. Instalasi Dependensi
+```bash
+npm install
+```
+### 4. Konfigurasi Environment Variable
+Buat berkas `.env` pada direktori *root* proyek, lalu sesuaikan konfigurasi berikut:
+```env
+# Koneksi Database MySQL
+DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/epostory_db"
+```
+```env.local
+# Konfigurasi Cloudinary (Untuk aset gambar)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your_cloud_name"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="your_preset"
+```
+### 5. Sinkronisasi Basis Data (Prisma)
+* **Opsi A: Database-First (Jika Anda mengubah tabel langsung via phpMyAdmin / MySQL)**
+Perintah untuk menarik skema tabel dari phpMyAdmin (MySQL) ke file schema.prisma (lakukan secara berurutan di terminal):
+```
+npx prisma db pull
+npx prisma generate
+```
+* **Opsi B: Schema-First (Jika Anda mengubah model langsung di file schema.prisma)**
+Perintah untuk menyelaraskan schema.prisma ke MySQL (lakukan secara berurutan di terminal):
+```
+npx prisma db push
+npx prisma generate
+```
+
+### 6. Menjalankan Server Pengembangan
+```
+npm run dev
+```
+Buka peramban (*browser*) di alamat [http://localhost:3000](http://localhost:3000).
+---
+
+
+# Mentah readme:
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
