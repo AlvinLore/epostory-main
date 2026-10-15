@@ -1,3 +1,47 @@
+# Identitas:
+Nama: Alvin Jeremy Naiborhu
+
+NIM: 222212488
+
+Kelas: 4SI2
+
+---
+# Struktur File:
+```text
+epostory/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/               # Halaman autentikasi masuk
+│   │   └── signup/              # Halaman pendaftaran
+│   ├── achievements/            # Halaman statistik pencapaian & galeri badge
+│   ├── admin/                   # Panel Kontrol & CMS Administrator
+│   │   ├── analytics/           # Pemantauan nilai, N-Gain, & ekspor CSV
+│   │   ├── dashboard/           # Metrik statistik global
+│   │   ├── settings/            # Pengaturan tambah admin
+│   │   ├── profile/             # Pengaturan profil admin
+│   │   └── stories/             # Manajemen & editor cerita
+│   ├── api/                     # REST API Backend Endpoints
+│   │   ├── auth/                # API Login & Register
+│   │   ├── admin/               # API menu admin
+│   │   ├── progress/            # API progres baca, jawaban kuis, & nilai N-Gain
+│   │   ├── notifications/       # API notifikasi dashboard admin
+│   │   ├── read/[id]/           # API membaca cerita
+│   │   └── stories/             # API operasi CRUD konten cerita
+│   ├── story/[id]/              # Reader materi interaktif, kuis, & tes evaluasi
+│   ├── quiz/result/             # Halaman hasil/penilaian
+│   ├── storybooks/              # Katalog cerita & riwayat bacaan siswa
+│   ├── profile/                 # Pengaturan profil user
+│   ├── layout.tsx               # Root layout aplikasi
+│   └── page.tsx                 # Halaman utama (Landing page)
+├── components/                  # Komponen UI modular (Sidebar, AdminSidebar, Modals)
+├── context/                     # Context API (AuthContext untuk manajemen sesi)
+├── lib/                         # Konfigurasi Prisma Client & helper utilities
+├── prisma/
+│   └── schema.prisma            # Skema pemodelan relasi basis data (11 tabel)
+└── public/                      # Aset statis publik (Logo, ikon, dll)
+```
+---
+# Dokumentasi:
 **EpoStory** adalah sistem pembelajaran buku cerita digital interaktif berbasis web yang mengintegrasikan metode Digital Storytelling dengan alur evaluasi terstruktur (*Pre-test*, Kuis Sela Materi, dan *Post-test*) serta elemen gamifikasi.
 
 Aplikasi ini dirancang khusus untuk meningkatkan pemahaman siswa dan menyediakan kalkulasi otomatis rasio **N-Gain Score** guna mengukur efektivitas hasil belajar secara objektif.
